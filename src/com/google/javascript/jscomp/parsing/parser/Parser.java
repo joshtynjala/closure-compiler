@@ -476,10 +476,16 @@ public class Parser {
     inGeneratorContext.addLast(isGenerator);
 
     FormalParameterListTree formalParameterList = parseFormalParameterList();
+
+    ParseTree returnType = null;
+    if (peek(TokenType.COLON)) {
+      returnType = parseTypeAnnotation();
+    }
+
     BlockTree functionBody = parseFunctionBody();
     FunctionDeclarationTree declaration =  new FunctionDeclarationTree(
         getTreeLocation(start), name, isStatic, isGenerator,
-        kind, formalParameterList, functionBody);
+        kind, formalParameterList, returnType, functionBody);
 
     inGeneratorContext.removeLast();
 
@@ -536,6 +542,12 @@ public class Parser {
     } else {
       formalParameterList = parseFormalParameterList();
     }
+
+    ParseTree returnType = null;
+    if (peek(TokenType.COLON)) {
+      returnType = parseTypeAnnotation();
+    }
+
     if (peekImplicitSemiColon()) {
       reportError("No newline allowed before '=>'");
     }
@@ -550,7 +562,7 @@ public class Parser {
     FunctionDeclarationTree declaration =  new FunctionDeclarationTree(
         getTreeLocation(start), null, false, false,
         FunctionDeclarationTree.Kind.ARROW,
-        formalParameterList, functionBody);
+        formalParameterList, returnType, functionBody);
 
     inGeneratorContext.removeLast();
 
@@ -628,6 +640,11 @@ public class Parser {
       ParseTree parameter;
       if (peekId()) {
         parameter = parseIdentifierExpression();
+        if (peek(TokenType.COLON)) {
+          ParseTree typeAnnotation = parseTypeAnnotation();
+          parameter =
+              new TypedParameterTree(getTreeLocation(start), parameter, typeAnnotation);
+        }
       } else if (peek(TokenType.OPEN_SQUARE)) {
         parameter = parseArrayPattern(PatternKind.INITIALIZER);
       } else {
@@ -654,6 +671,14 @@ public class Parser {
 
     return new FormalParameterListTree(
         getTreeLocation(listStart), result.build());
+  }
+
+  private ParseTree parseTypeAnnotation() {
+    SourcePosition start = getTreeStartLocation();
+    eat(TokenType.COLON);
+    IdentifierToken token = eatIdOrKeywordAsId();
+    IdentifierExpressionTree typeInfo = new IdentifierExpressionTree(getTreeLocation(start), token);
+    return typeInfo;
   }
 
   private BlockTree parseFunctionBody() {
@@ -861,11 +886,16 @@ public class Parser {
 
     SourcePosition start = getTreeStartLocation();
     ParseTree lvalue;
+    ParseTree typeAnnotation = null;
     if (peekPatternStart()) {
       lvalue = parsePattern(PatternKind.INITIALIZER);
     } else {
       lvalue = parseIdentifierExpression();
+      if (peek(TokenType.COLON)) {
+        typeAnnotation = parseTypeAnnotation();
+      }
     }
+
     ParseTree initializer = null;
     if (peek(TokenType.EQUAL)) {
       initializer = parseInitializer(expressionIn);
@@ -878,7 +908,7 @@ public class Parser {
         reportError("destructuring must have an initializer");
       }
     }
-    return new VariableDeclarationTree(getTreeLocation(start), lvalue, initializer);
+    return new VariableDeclarationTree(getTreeLocation(start), lvalue, typeAnnotation, initializer);
   }
 
   private ParseTree parseInitializer(Expression expressionIn) {

@@ -94,6 +94,7 @@ import com.google.javascript.jscomp.parsing.parser.trees.TemplateSubstitutionTre
 import com.google.javascript.jscomp.parsing.parser.trees.ThisExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ThrowStatementTree;
 import com.google.javascript.jscomp.parsing.parser.trees.TryStatementTree;
+import com.google.javascript.jscomp.parsing.parser.trees.TypedParameterTree;
 import com.google.javascript.jscomp.parsing.parser.trees.UnaryExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.VariableDeclarationListTree;
 import com.google.javascript.jscomp.parsing.parser.trees.VariableDeclarationTree;
@@ -106,6 +107,8 @@ import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 import com.google.javascript.rhino.ErrorReporter;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.JSDocInfo;
+import com.google.javascript.rhino.JSDocInfoBuilder;
+import com.google.javascript.rhino.JSTypeExpression;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 import com.google.javascript.rhino.TokenStream;
@@ -1306,6 +1309,18 @@ class NewIRFactory {
       }
       node.addChildToBack(transform(functionTree.formalParameterList));
 
+      if (functionTree.returnType != null) {
+        JSTypeExpression returnType = convertTypeTree(functionTree.returnType);
+        // TODO(martinprobst): Reduce code duplication?
+        JSDocInfoBuilder jsdocBuilder = JSDocInfoBuilder.maybeCopyFrom(node.getJSDocInfo());
+        if (!jsdocBuilder.recordReturnType(returnType)) {
+          errorReporter.error("Bad type annotation", sourceName,
+              lineno(functionTree.returnType), charno(functionTree.returnType));
+        }
+        JSDocInfo info = jsdocBuilder.build(node);
+        node.setJSDocInfo(info);
+      }
+
       Node bodyNode = transform(functionTree.functionBody);
       if (!isArrow && !bodyNode.isBlock()) {
         // When in ideMode the parser tries to parse some constructs the
@@ -1942,6 +1957,7 @@ class NewIRFactory {
         Node initializer = transform(decl.initializer);
         node.addChildToBack(initializer);
       }
+      maybeProcessType(node, decl.declaredType);
       return node;
     }
 
@@ -2138,6 +2154,37 @@ class NewIRFactory {
       return module;
     }
 
+    @Override
+    Node processTypedParameter(TypedParameterTree typeAnnotation) {
+      Node inner = process(typeAnnotation.inner);
+      maybeProcessType(inner, typeAnnotation.typeAnnotation);
+      return inner;
+    }
+
+    private void maybeProcessType(Node typeTarget, ParseTree typeTree) {
+      if (typeTree == null) {
+        return;
+      }
+      JSTypeExpression typeExpression = convertTypeTree(typeTree);
+      JSDocInfoBuilder jsdocBuilder = JSDocInfoBuilder.maybeCopyFrom(typeTarget.getJSDocInfo());
+      if (!jsdocBuilder.recordType(typeExpression)) {
+        errorReporter.error(
+            "Bad type - can only have JSDoc or inline type annotations, not both",
+            sourceName, lineno(typeTree), charno(typeTree));
+      }
+      JSDocInfo info = jsdocBuilder.build(typeTarget);
+      typeTarget.setJSDocInfo(info);
+    }
+
+    private JSTypeExpression convertTypeTree(ParseTree typeTree) {
+      maybeWarnTypeSyntax(typeTree);
+
+      // TODO(martinprobst): More types.
+      IdentifierExpressionTree typeName = typeTree.asIdentifierExpression();
+      Node typeExpr = Node.newString(typeName.identifierToken.value);
+      return new JSTypeExpression(typeExpr, sourceName);
+    }
+
     private Node transformList(
         int type, ImmutableList<ParseTree> list) {
       Node n = newNode(type);
@@ -2163,6 +2210,20 @@ class NewIRFactory {
             sourceName,
             lineno(node), charno(node));
       }
+    }
+
+    void maybeWarnTypeSyntax(ParseTree node) {
+      if (!config.acceptTypeSyntax) {
+        errorReporter.warning("support for type syntax is not enabled", sourceName,
+            lineno(node), charno(node));
+      }
+      /* MOE:begin_strip */
+      if (!allowTypeSyntax) {
+        errorReporter.error(
+            "type syntax is not yet generally available, please contact jscomp-team@",
+            sourceName, lineno(node), charno(node));
+      }
+      /* MOE:end_strip */
     }
 
     @Override
@@ -2314,6 +2375,17 @@ class NewIRFactory {
   boolean isEs5OrBetterMode() {
     return config.languageMode != LanguageMode.ECMASCRIPT3;
   }
+
+  /* MOE:begin_strip */
+  // This check makes sure no non-experimental Google3 code can use type syntax yet, as the marker
+  // file is hidden through blaze visibility rules.
+  private static final boolean allowTypeSyntax;
+
+  static {
+    String markerFile = "/javascript/tools/jscompiler/allow-type-syntax.txt";
+    allowTypeSyntax = NewIRFactory.class.getResource(markerFile) != null;
+  }
+  /* MOE:end_strip */
 
   private boolean inStrictContext() {
     // TODO(johnlenz): in ECMASCRIPT5/6 is a "mixed" mode and we should track the context

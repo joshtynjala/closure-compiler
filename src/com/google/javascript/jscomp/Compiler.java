@@ -2137,6 +2137,11 @@ public class Compiler extends AbstractCompiler {
   }
 
   @Override
+  public boolean acceptTypeSyntax() {
+    return options.acceptTypeSyntax;
+  }
+
+  @Override
   Config getParserConfig(ConfigContext context) {
     if (parserConfig == null) {
       switch (options.getLanguageIn()) {
@@ -2177,6 +2182,7 @@ public class Compiler extends AbstractCompiler {
         isIdeMode(),
         mode,
         acceptConstKeyword(),
+        acceptTypeSyntax(),
         options.extraAnnotationNames);
   }
 

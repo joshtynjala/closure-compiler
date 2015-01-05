@@ -16,17 +16,21 @@
 
 package com.google.javascript.jscomp.parsing.parser.trees;
 
+import javax.annotation.Nullable;
+
 import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 
 public class VariableDeclarationTree extends ParseTree {
   // An IdentifierExpressionTree, ArrayPatternTree or ObjectLiteralTree
   public final ParseTree lvalue;
+  @Nullable public final ParseTree declaredType;
   public final ParseTree initializer;
 
   public VariableDeclarationTree(SourceRange location, ParseTree lvalue,
-      ParseTree initializer) {
+      @Nullable ParseTree declaredType, ParseTree initializer) {
     super(ParseTreeType.VARIABLE_DECLARATION, location);
     this.lvalue = lvalue;
+    this.declaredType = declaredType;
     this.initializer = initializer;
   }
 }
