@@ -16,6 +16,8 @@
 
 package com.google.javascript.jscomp.parsing.parser;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
@@ -674,10 +676,46 @@ public class Parser {
   }
 
   private ParseTree parseTypeAnnotation() {
-    SourcePosition start = getTreeStartLocation();
     eat(TokenType.COLON);
+
+    if (peekId()) {
+      // PredefinedType or TypeReference
+      ParseTree typeReference = parseTypeReference();
+
+      if (peek(TokenType.OPEN_SQUARE)) {
+        // ArrayType
+        reportError("array types are not yet supported");
+      }
+      return typeReference;
+    }
+    reportError("Unexpected end of type expression");
+    return null;
+  }
+
+  private ParseTree parseTypeReference() {
+    return parseTypeName();
+    // TODO(martinprobst): TypeArguments.
+  }
+
+  private ParseTree parseTypeName() {
+    SourcePosition start = getTreeStartLocation();
     IdentifierToken token = eatIdOrKeywordAsId();
-    IdentifierExpressionTree typeInfo = new IdentifierExpressionTree(getTreeLocation(start), token);
+
+    StringBuilder identifier = new StringBuilder(MoreObjects.firstNonNull(token.value, ""));
+    while (peek(TokenType.PERIOD)) {
+      // ModuleName . Identifier
+      eat(TokenType.PERIOD);
+      identifier.append('.');
+      token = eatIdOrKeywordAsId();
+      if (token == null) {
+        break;
+      }
+      identifier.append(token.value);
+    }
+    // Dotted type names are represented as single strings with the identifiers concatenated.
+    SourceRange range = getTreeLocation(start);
+    token = new IdentifierToken(range, identifier.toString());
+    IdentifierExpressionTree typeInfo = new IdentifierExpressionTree(range, token);
     return typeInfo;
   }
 

@@ -2217,13 +2217,6 @@ class NewIRFactory {
         errorReporter.warning("support for type syntax is not enabled", sourceName,
             lineno(node), charno(node));
       }
-      /* MOE:begin_strip */
-      if (!allowTypeSyntax) {
-        errorReporter.error(
-            "type syntax is not yet generally available, please contact jscomp-team@",
-            sourceName, lineno(node), charno(node));
-      }
-      /* MOE:end_strip */
     }
 
     @Override
@@ -2375,17 +2368,6 @@ class NewIRFactory {
   boolean isEs5OrBetterMode() {
     return config.languageMode != LanguageMode.ECMASCRIPT3;
   }
-
-  /* MOE:begin_strip */
-  // This check makes sure no non-experimental Google3 code can use type syntax yet, as the marker
-  // file is hidden through blaze visibility rules.
-  private static final boolean allowTypeSyntax;
-
-  static {
-    String markerFile = "/javascript/tools/jscompiler/allow-type-syntax.txt";
-    allowTypeSyntax = NewIRFactory.class.getResource(markerFile) != null;
-  }
-  /* MOE:end_strip */
 
   private boolean inStrictContext() {
     // TODO(johnlenz): in ECMASCRIPT5/6 is a "mixed" mode and we should track the context
