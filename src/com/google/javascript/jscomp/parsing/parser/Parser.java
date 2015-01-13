@@ -17,7 +17,6 @@
 package com.google.javascript.jscomp.parsing.parser;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
