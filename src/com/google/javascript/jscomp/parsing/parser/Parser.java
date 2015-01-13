@@ -676,7 +676,10 @@ public class Parser {
 
   private ParseTree parseTypeAnnotation() {
     eat(TokenType.COLON);
+    return parseType();
+  }
 
+  private ParseTree parseType() {
     if (peekId()) {
       // PredefinedType or TypeReference
       ParseTree typeReference = parseTypeReference();
@@ -698,11 +701,35 @@ public class Parser {
   }
 
   private ParseTree parseTypeReference() {
-    return parseTypeName();
-    // TODO(martinprobst): TypeArguments.
+    SourcePosition start = getTreeStartLocation();
+
+    TypeNameTree typeName = parseTypeName();
+    if (!peek(TokenType.OPEN_ANGLE)) {
+      return typeName;
+    }
+
+    return parseTypeArgumentList(start, typeName);
   }
 
-  private ParseTree parseTypeName() {
+  private ParseTree parseTypeArgumentList(SourcePosition start, TypeNameTree typeName) {
+    // < TypeArgumentList >
+    // TypeArgumentList , TypeArgument
+    eat(TokenType.OPEN_ANGLE);
+    ImmutableList.Builder<ParseTree> typeArguments = ImmutableList.builder();
+    ParseTree type = parseType();
+    typeArguments.add(type);
+
+    while (peek(TokenType.COMMA)) {
+      eat(TokenType.COMMA);
+      type = parseType();
+      typeArguments.add(type);
+    }
+    eat(TokenType.CLOSE_ANGLE);
+
+    return new ParameterizedTypeTree(getTreeLocation(start), typeName, typeArguments.build());
+  }
+
+  private TypeNameTree parseTypeName() {
     SourcePosition start = getTreeStartLocation();
     IdentifierToken token = eatIdOrKeywordAsId();
 

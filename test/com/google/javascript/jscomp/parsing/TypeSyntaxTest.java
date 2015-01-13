@@ -5,6 +5,7 @@ import com.google.javascript.rhino.JSDocInfo;
 import com.google.javascript.rhino.JSTypeExpression;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.jstype.JSType;
+import com.google.javascript.rhino.jstype.NamedType;
 import com.google.javascript.rhino.jstype.SimpleSourceFile;
 import com.google.javascript.rhino.jstype.StaticSourceFile;
 import com.google.javascript.rhino.testing.BaseJSTypeTestCase;
@@ -29,8 +30,8 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
   }
 
   public void testTypeSyntax_variableDeclaration() {
-    Node varDecl = parse("var foo: string = 'hello';").getFirstChild();
-    assertTypeEquals(STRING_TYPE, varDecl.getFirstChild().getJSDocInfo().getType());
+    JSTypeExpression type = parseTypeOfVar("var foo: string = 'hello';");
+    assertTypeEquals(STRING_TYPE, type);
   }
 
   public void testTypeSyntax_functionParamDeclaration() {
@@ -46,8 +47,7 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
   }
 
   public void testCompositeType() {
-    Node varDecl = parse("var foo: mymod.ns.Type;").getFirstChild();
-    JSTypeExpression type = varDecl.getFirstChild().getJSDocInfo().getType();
+    JSTypeExpression type = parseTypeOfVar("var foo: mymod.ns.Type;");
     JSType namedType =
         registry.createNullableType(registry.createNamedType("mymod.ns.Type", null, -1, -1));
     assertTypeEquals(namedType, type);
@@ -59,11 +59,29 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
   }
 
   public void testArrayType() {
-    Node varDecl = parse("var foo: string[];").getFirstChild();
-    JSTypeExpression parsedType = varDecl.getFirstChild().getJSDocInfo().getType();
+    JSTypeExpression parsedType = parseTypeOfVar("var foo: string[];");
 
     JSType arrayOfString = createNullableType(createTemplatizedType(ARRAY_TYPE, STRING_TYPE));
     assertTypeEquals(arrayOfString, parsedType);
+  }
+
+  private JSTypeExpression parseTypeOfVar(String expr) {
+    Node varDecl = parse(expr).getFirstChild();
+    JSTypeExpression parsedType = varDecl.getFirstChild().getJSDocInfo().getType();
+    return parsedType;
+  }
+
+  public void testParameterizedType() {
+    JSTypeExpression type = parseTypeOfVar("var x: my.parameterized.Type<ns.A, ns.B>;");
+    JSType expectedType =
+        createNullableType(createTemplatizedType(createNamedType("my.parameterized.Type"),
+            createNullableType(createNamedType("ns.A")),
+            createNullableType(createNamedType("ns.B"))));
+    assertTypeEquals(expectedType, type);
+  }
+
+  private NamedType createNamedType(String typeName) {
+    return registry.createNamedType(typeName, null, -1, -1);
   }
 
   /**
