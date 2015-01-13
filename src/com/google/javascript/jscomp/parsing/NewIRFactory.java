@@ -76,6 +76,7 @@ import com.google.javascript.jscomp.parsing.parser.trees.NewExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.NullTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ObjectLiteralExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ObjectPatternTree;
+import com.google.javascript.jscomp.parsing.parser.trees.ParameterizedTypeTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ParenExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ParseTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ParseTreeType;
@@ -94,6 +95,7 @@ import com.google.javascript.jscomp.parsing.parser.trees.TemplateSubstitutionTre
 import com.google.javascript.jscomp.parsing.parser.trees.ThisExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ThrowStatementTree;
 import com.google.javascript.jscomp.parsing.parser.trees.TryStatementTree;
+import com.google.javascript.jscomp.parsing.parser.trees.TypeNameTree;
 import com.google.javascript.jscomp.parsing.parser.trees.TypedParameterTree;
 import com.google.javascript.jscomp.parsing.parser.trees.UnaryExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.VariableDeclarationListTree;
@@ -2155,6 +2157,11 @@ class NewIRFactory {
     }
 
     @Override
+    Node processTypeName(TypeNameTree tree) {
+      return Node.newString(tree.value, lineno(tree), charno(tree));
+    }
+
+    @Override
     Node processTypedParameter(TypedParameterTree typeAnnotation) {
       Node inner = process(typeAnnotation.inner);
       maybeProcessType(inner, typeAnnotation.typeAnnotation);
@@ -2179,10 +2186,20 @@ class NewIRFactory {
     private JSTypeExpression convertTypeTree(ParseTree typeTree) {
       maybeWarnTypeSyntax(typeTree);
 
-      // TODO(martinprobst): More types.
-      IdentifierExpressionTree typeName = typeTree.asIdentifierExpression();
-      Node typeExpr = Node.newString(typeName.identifierToken.value);
+      Node typeExpr = process(typeTree);
       return new JSTypeExpression(typeExpr, sourceName);
+    }
+
+    @Override
+    Node processParameterizedType(ParameterizedTypeTree tree) {
+      // ( STRING(TypeName) ( BLOCK TypeParameters... ) )
+      Node typeName = process(tree.typeName);
+      Node typeArgList = IR.block();
+      typeName.addChildrenToBack(typeArgList);
+      for (ParseTree arg : tree.typeArguments) {
+        typeArgList.addChildrenToFront(process(arg));
+      }
+      return typeName;
     }
 
     private Node transformList(

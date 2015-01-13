@@ -7,6 +7,7 @@ import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.jstype.JSType;
 import com.google.javascript.rhino.jstype.SimpleSourceFile;
 import com.google.javascript.rhino.jstype.StaticSourceFile;
+import com.google.javascript.rhino.jstype.TemplatizedType;
 import com.google.javascript.rhino.testing.BaseJSTypeTestCase;
 import com.google.javascript.rhino.testing.TestErrorReporter;
 
@@ -56,6 +57,14 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
   public void testCompositeType_trailingDot() {
     expectErrors("'identifier' expected");
     parse("var foo: mymod.Type.;");
+  }
+
+  public void testArrayType() {
+    Node varDecl = parse("var foo: string[];").getFirstChild();
+    JSTypeExpression parsedType = varDecl.getFirstChild().getJSDocInfo().getType();
+
+    JSType arrayOfString = createNullableType(createTemplatizedType(ARRAY_TYPE, STRING_TYPE));
+    assertTypeEquals(arrayOfString, parsedType);
   }
 
   /**
