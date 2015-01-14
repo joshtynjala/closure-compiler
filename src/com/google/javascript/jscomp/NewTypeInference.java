@@ -81,27 +81,27 @@ public class NewTypeInference implements CompilerPass {
 
   static final DiagnosticType RETURN_NONDECLARED_TYPE = DiagnosticType.warning(
       "JSC_RETURN_NONDECLARED_TYPE",
-      "Returned type does not match declared return type.\n " +
+      "Returned type does not match declared return type.\n" +
       "declared : {0}\n" +
       "found    : {1}\n");
 
   static final DiagnosticType INVALID_INFERRED_RETURN_TYPE =
       DiagnosticType.warning(
           "JSC_INVALID_INFERRED_RETURN_TYPE",
-          "Function called in context that expects incompatible type.\n " +
+          "Function called in context that expects incompatible type.\n" +
           "expected : {0}\n" +
           "found    : {1}\n");
 
   static final DiagnosticType INVALID_ARGUMENT_TYPE = DiagnosticType.warning(
       "JSC_INVALID_ARGUMENT_TYPE",
-      "Invalid type for parameter {0} of function {1}.\n " +
+      "Invalid type for parameter {0} of function {1}.\n" +
       "expected : {2}\n" +
       "found    : {3}\n");
 
   static final DiagnosticType CROSS_SCOPE_GOTCHA = DiagnosticType.warning(
       "JSC_CROSS_SCOPE_GOTCHA",
       "You thought we weren't going to notice? Guess again.\n" +
-      "Variable {0} typed inconsistently across scopes.\n " +
+      "Variable {0} typed inconsistently across scopes.\n" +
       "In outer scope : {1}\n" +
       "In inner scope : {2}\n");
 
@@ -1766,8 +1766,9 @@ public class NewTypeInference implements CompilerPass {
       if (funType.isOptionalArg(i) && pair.type.equals(JSType.UNDEFINED)) {
         argTypeForDeferredCheck = null; // No deferred check needed.
       } else if (!pair.type.isSubtypeOf(formalType)) {
+        String fnName = getReadableCalleeName(call.getFirstChild());
         warnings.add(JSError.make(arg, INVALID_ARGUMENT_TYPE,
-                Integer.toString(i + 1), "",
+                Integer.toString(i + 1), fnName,
                 formalType.toString(), pair.type.toString()));
         argTypeForDeferredCheck = null; // No deferred check needed.
       }
@@ -1799,9 +1800,15 @@ public class NewTypeInference implements CompilerPass {
     EnvTypePair pair =
         analyzeExprFwd(assertedNode, env, JSType.UNKNOWN, assertedType);
     if (pair.type.isBottom()) {
-      warnings.add(JSError.make(assertedNode, NewTypeInference.ASSERT_FALSE));
-      pair.type = JSType.UNKNOWN;
-      pair.env = env;
+      JSType t = analyzeExprFwd(assertedNode, env)
+          .type.substituteGenericsWithUnknown();
+      if (t.isSubtypeOf(assertedType)) {
+        pair.type = t;
+      } else {
+        warnings.add(JSError.make(assertedNode, NewTypeInference.ASSERT_FALSE));
+        pair.type = JSType.UNKNOWN;
+        pair.env = env;
+      }
     }
     return pair;
   }
@@ -2067,12 +2074,8 @@ public class NewTypeInference implements CompilerPass {
         // Unification may fail b/c of types irrelevant to generics, eg,
         // number vs string.
         // In this case, don't warn here; we'll show invalid-arg-type later.
-        HashMap<String, JSType> tmpTypeMap = new HashMap<>();
-        for (String typeParam : typeParameters) {
-          tmpTypeMap.put(typeParam, JSType.UNKNOWN);
-        }
         JSType targetAfterInstantiation =
-            unifTarget.substituteGenerics(tmpTypeMap);
+            unifTarget.substituteGenericsWithUnknown();
         if (!unifTarget.equals(targetAfterInstantiation)
             && unifSource.isSubtypeOf(targetAfterInstantiation)) {
           warnings.add(JSError.make(arg, FAILED_TO_UNIFY,
@@ -3059,10 +3062,15 @@ public class NewTypeInference implements CompilerPass {
 
   private EnvTypePair analyzePropAccessBwd(
       Node receiver, String pname, TypeEnv outEnv, JSType requiredType) {
+    Node propAccessNode = receiver.getParent();
     QualifiedName qname = new QualifiedName(pname);
-    EnvTypePair pair = analyzeExprBwd(receiver, outEnv,
-        pickReqObjType(receiver.getParent()).withLoose()
-        .withProperty(qname, requiredType));
+    JSType reqObjType = pickReqObjType(propAccessNode).withLoose();
+    // In the BWD direction we don't have specialized types, so we use
+    // isPropertyTest to avoid spurious addition of properties to loose objects.
+    if (!NodeUtil.isPropertyTest(compiler, propAccessNode)) {
+      reqObjType = reqObjType.withProperty(qname, requiredType);
+    }
+    EnvTypePair pair = analyzeExprBwd(receiver, outEnv, reqObjType);
     JSType receiverType = pair.type;
     JSType propAccessType = receiverType.mayHaveProp(qname) ?
         receiverType.getProp(qname) : requiredType;

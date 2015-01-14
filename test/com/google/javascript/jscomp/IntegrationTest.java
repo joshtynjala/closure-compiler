@@ -1569,7 +1569,6 @@ public class IntegrationTest extends IntegrationTestCase {
 
   public void testPropertyRenaming() {
     CompilerOptions options = createCompilerOptions();
-    options.propertyAffinity = true;
     String code =
         "function f() { return this.foo + this['bar'] + this.Baz; }" +
         "f.prototype.bar = 3; f.prototype.Baz = 3;";
@@ -1580,8 +1579,8 @@ public class IntegrationTest extends IntegrationTestCase {
         "function f() { return this.foo + this['b'] + this.a; } " +
         "f.prototype.b = 3; f.prototype.a = 3;";
     String all =
-        "function f() { return this.b + this['bar'] + this.a; }" +
-        "f.prototype.c = 3; f.prototype.a = 3;";
+        "function f() { return this.c + this['bar'] + this.a; }" +
+        "f.prototype.b = 3; f.prototype.a = 3;";
     testSame(options, code);
 
     options.propertyRenaming = PropertyRenamingPolicy.HEURISTIC;
@@ -1641,21 +1640,6 @@ public class IntegrationTest extends IntegrationTestCase {
     testSame(options, code);
 
     options.aliasExternals = true;
-    test(options, code, expected);
-  }
-
-  public void testAliasKeywords() {
-    CompilerOptions options = createCompilerOptions();
-    String code =
-        "function f() { return true + true + true + true + true + true; }";
-    String expected = "var JSCompiler_alias_TRUE = true;" +
-        "function f() { return JSCompiler_alias_TRUE + " +
-        "    JSCompiler_alias_TRUE + JSCompiler_alias_TRUE + " +
-        "    JSCompiler_alias_TRUE + JSCompiler_alias_TRUE + " +
-        "    JSCompiler_alias_TRUE; }";
-    testSame(options, code);
-
-    options.aliasKeywords = true;
     test(options, code, expected);
   }
 
@@ -2505,7 +2489,7 @@ public class IntegrationTest extends IntegrationTestCase {
 
   public void testCheckProvidesWarning() {
     CompilerOptions options = createCompilerOptions();
-    options.setWarningLevel(DiagnosticGroups.CHECK_PROVIDES,
+    options.setWarningLevel(DiagnosticGroups.MISSING_PROVIDE,
         CheckLevel.WARNING);
     options.setCheckProvides(CheckLevel.WARNING);
     test(options,
@@ -2517,12 +2501,12 @@ public class IntegrationTest extends IntegrationTestCase {
 
   public void testSuppressCheckProvidesWarning() {
     CompilerOptions options = createCompilerOptions();
-    options.setWarningLevel(DiagnosticGroups.CHECK_PROVIDES,
+    options.setWarningLevel(DiagnosticGroups.MISSING_PROVIDE,
         CheckLevel.WARNING);
     options.setCheckProvides(CheckLevel.WARNING);
     testSame(options,
         "/** @constructor\n" +
-        " *  @suppress{checkProvides} */\n" +
+        " *  @suppress{missingProvide} */\n" +
         "function f() {}");
   }
 

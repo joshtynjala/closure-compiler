@@ -316,10 +316,6 @@ public class TypeCheck implements NodeTraversal.Callback, CompilerPass {
   private int unknownCount = 0;
   private boolean inExterns;
 
-  // A state boolean to see we are currently in @notypecheck section of the
-  // code.
-  private int noTypeCheckSection = 0;
-
   private Method editDistance;
 
   private static final class SuggestionPair {
@@ -437,38 +433,14 @@ public class TypeCheck implements NodeTraversal.Callback, CompilerPass {
     }
   }
 
-
-  private void checkNoTypeCheckSection(Node n, boolean enterSection) {
-    switch (n.getType()) {
-      case Token.SCRIPT:
-      case Token.BLOCK:
-      case Token.VAR:
-      case Token.FUNCTION:
-      case Token.ASSIGN:
-        JSDocInfo info = n.getJSDocInfo();
-        if (info != null && info.isNoTypeCheck()) {
-          if (enterSection) {
-            noTypeCheckSection++;
-          } else {
-            noTypeCheckSection--;
-          }
-        }
-        validator.setShouldReport(noTypeCheckSection == 0);
-        break;
-    }
-  }
-
   private void report(NodeTraversal t, Node n, DiagnosticType diagnosticType,
       String... arguments) {
-    if (noTypeCheckSection == 0) {
-      t.report(n, diagnosticType, arguments);
-    }
+    t.report(n, diagnosticType, arguments);
   }
 
   @Override
   public boolean shouldTraverse(
       NodeTraversal t, Node n, Node parent) {
-    checkNoTypeCheckSection(n, true);
     switch (n.getType()) {
       case Token.FUNCTION:
         // normal type checking
@@ -882,8 +854,6 @@ public class TypeCheck implements NodeTraversal.Callback, CompilerPass {
     if (typeable) {
       doPercentTypedAccounting(t, n);
     }
-
-    checkNoTypeCheckSection(n, false);
   }
 
   private void checkTypeofString(NodeTraversal t, Node n, String s) {
@@ -1503,7 +1473,7 @@ public class TypeCheck implements NodeTraversal.Callback, CompilerPass {
       NodeTraversal t, Node n) {
     if (!objectType.isEmptyType() &&
         reportMissingProperties &&
-        (!isPropertyTest(n) || objectType.isStruct())) {
+        (!NodeUtil.isPropertyTest(compiler, n) || objectType.isStruct())) {
       if (!typeRegistry.canPropertyBeDefined(objectType, propName)) {
         boolean lowConfidence = objectType.isUnknownType()
             || objectType.isEquivalentTo(getNativeType(OBJECT_TYPE));
@@ -1580,43 +1550,6 @@ public class TypeCheck implements NodeTraversal.Callback, CompilerPass {
     }
 
     return null;
-  }
-
-  /**
-   * Determines whether this node is testing for the existence of a property.
-   * If true, we will not emit warnings about a missing property.
-   *
-   * @param getProp The GETPROP being tested.
-   */
-  private boolean isPropertyTest(Node getProp) {
-    Node parent = getProp.getParent();
-    switch (parent.getType()) {
-      case Token.CALL:
-        return parent.getFirstChild() != getProp &&
-            compiler.getCodingConvention().isPropertyTestFunction(parent);
-
-      case Token.IF:
-      case Token.WHILE:
-      case Token.DO:
-      case Token.FOR:
-        return NodeUtil.getConditionExpression(parent) == getProp;
-
-      case Token.INSTANCEOF:
-      case Token.TYPEOF:
-        return true;
-
-      case Token.AND:
-      case Token.HOOK:
-        return parent.getFirstChild() == getProp;
-
-      case Token.NOT:
-        return parent.getParent().isOr() &&
-            parent.getParent().getFirstChild() == parent;
-
-      case Token.CAST:
-        return isPropertyTest(parent);
-    }
-    return false;
   }
 
   /**

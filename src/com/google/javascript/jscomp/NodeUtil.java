@@ -1843,7 +1843,7 @@ public final class NodeUtil {
    * @param n The node
    * @return True if {@code n} is VAR, LET or CONST
    */
-  static boolean isNameDeclaration(Node n) {
+  public static boolean isNameDeclaration(Node n) {
     return n.isVar() || n.isLet() || n.isConst();
   }
 
@@ -2958,6 +2958,43 @@ public final class NodeUtil {
       return false;
     }
     return isPrototypePropertyDeclaration(assignNode.getParent());
+  }
+
+  /**
+   * Determines whether this node is testing for the existence of a property.
+   * If true, we will not emit warnings about a missing property.
+   *
+   * @param propAccess The GETPROP or GETELEM being tested.
+   */
+  static boolean isPropertyTest(AbstractCompiler compiler, Node propAccess) {
+    Node parent = propAccess.getParent();
+    switch (parent.getType()) {
+      case Token.CALL:
+        return parent.getFirstChild() != propAccess
+            && compiler.getCodingConvention().isPropertyTestFunction(parent);
+
+      case Token.IF:
+      case Token.WHILE:
+      case Token.DO:
+      case Token.FOR:
+        return NodeUtil.getConditionExpression(parent) == propAccess;
+
+      case Token.INSTANCEOF:
+      case Token.TYPEOF:
+        return true;
+
+      case Token.AND:
+      case Token.HOOK:
+        return parent.getFirstChild() == propAccess;
+
+      case Token.NOT:
+        return parent.getParent().isOr()
+            && parent.getParent().getFirstChild() == parent;
+
+      case Token.CAST:
+        return isPropertyTest(compiler, parent);
+    }
+    return false;
   }
 
   /**
