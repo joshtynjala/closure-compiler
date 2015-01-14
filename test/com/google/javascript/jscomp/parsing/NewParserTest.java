@@ -2585,7 +2585,7 @@ public class NewParserTest extends BaseJSTypeTestCase {
     StaticSourceFile file = new SimpleSourceFile("input", false);
     script = ParserRunner.parse(file,
       string,
-      ParserRunner.createConfig(isIdeMode, mode, false, allowTypeSyntax, null),
+      ParserRunner.createConfig(isIdeMode, mode, false, false, null),
       testErrorReporter).ast;
 
     // verifying that all warnings were seen
