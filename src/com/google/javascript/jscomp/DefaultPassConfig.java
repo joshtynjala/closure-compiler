@@ -697,10 +697,6 @@ public class DefaultPassConfig extends PassConfig {
       passes.add(aliasExternals);
     }
 
-    if (options.aliasKeywords) {
-      passes.add(aliasKeywords);
-    }
-
     // Passes after this point can no longer depend on normalized AST
     // assumptions.
     passes.add(markUnnormalized);
@@ -2254,14 +2250,6 @@ public class DefaultPassConfig extends PassConfig {
     }
   };
 
-  /** Aliases common keywords (true, false) */
-  final PassFactory aliasKeywords = new PassFactory("aliasKeywords", true) {
-    @Override
-    protected CompilerPass create(AbstractCompiler compiler) {
-      return new AliasKeywords(compiler);
-    }
-  };
-
   /** Handling for the ObjectPropertyString primitive. */
   final PassFactory objectPropertyStringPostprocess =
       new PassFactory("ObjectPropertyStringPostprocess", true) {
@@ -2353,7 +2341,7 @@ public class DefaultPassConfig extends PassConfig {
 
       case ALL_UNQUOTED:
         RenameProperties rprop = new RenameProperties(
-            compiler, options.propertyAffinity, options.generatePseudoNames,
+            compiler, options.generatePseudoNames,
             prevPropertyMap, reservedChars);
         rprop.process(externs, root);
         return rprop.getPropertyMap();

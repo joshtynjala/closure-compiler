@@ -256,7 +256,7 @@ public class DiagnosticGroups {
           TypeCheck.MULTIPLE_VAR_DEF,
           TypeCheck.UNKNOWN_OVERRIDE,
           TypeValidator.INTERFACE_METHOD_NOT_IMPLEMENTED,
-//           NewTypeInference.ASSERT_FALSE,
+          NewTypeInference.ASSERT_FALSE,
           NewTypeInference.CALL_FUNCTION_WITH_BOTTOM_FORMAL,
           NewTypeInference.CANNOT_BIND_CTOR,
 //           NewTypeInference.CONST_REASSIGNED,
@@ -285,7 +285,7 @@ public class DiagnosticGroups {
 //           TypeCheck.ILLEGAL_PROPERTY_CREATION,
           TypeCheck.IN_USED_WITH_STRUCT,
 //           TypeCheck.INEXISTENT_PROPERTY,
-//           TypeCheck.NOT_CALLABLE,
+          TypeCheck.NOT_CALLABLE,
 //           TypeCheck.WRONG_ARGUMENT_COUNT,
 //           TypeValidator.ILLEGAL_PROPERTY_ACCESS,
 //           TypeValidator.INVALID_CAST,
@@ -371,12 +371,6 @@ public class DiagnosticGroups {
       DiagnosticGroups.registerGroup("es5Strict",
           ES5_STRICT_UNCOMMON,
           ES5_STRICT_REFLECTION);
-
-  // TODO(johnlenz): Remove this in favor or "missingProvide" which matches
-  // the existing and more popular linter suppression
-  public static final DiagnosticGroup CHECK_PROVIDES =
-      DiagnosticGroups.registerGroup("checkProvides",
-          CheckProvides.MISSING_PROVIDE_WARNING);
 
   public static final DiagnosticGroup MISSING_PROVIDE =
       DiagnosticGroups.registerGroup("missingProvide",

@@ -329,7 +329,7 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
   public void testNewInFunctionJsdoc() {
     typeCheck(
         "/** @constructor */ function Foo() {}\n"
-        + "function h(/** function(new:Foo,...[number]):number */ f) {\n"
+        + "function h(/** function(new:Foo, ...number):number */ f) {\n"
         + "  (new f()) - 5;\n"
         + "}",
         NewTypeInference.INVALID_OPERAND_TYPE);
@@ -1875,6 +1875,18 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         + "  o.p('str');\n"
         + "}",
         NewTypeInference.INVALID_ARGUMENT_TYPE);
+
+    checkNoWarnings(
+        "/** @constructor */\n"
+        + "function Foo() {}\n"
+        + "/**\n"
+        + " * @template T\n"
+        + " * @param {T} x\n"
+        + " */\n"
+        + "function f(x) {\n"
+        + "  var y = x;\n"
+        + "  goog.asserts.assertInstanceof(y, Foo);\n"
+        + "}");
   }
 
   public void testDontInferBottom() {
@@ -2271,6 +2283,31 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         + "  obj.x = 123;\n"
         + "  f(obj);\n"
         + "}");
+
+    checkNoWarnings(
+        "function f(g) {\n"
+        + "  if (g.randomName) {\n"
+        + "  } else {\n"
+        + "    return g();\n"
+        + "  }\n"
+        + "}");
+
+    checkNoWarnings(
+        "function f(x) {\n"
+        + "  if (x.a) {} else {}\n"
+        + "}\n"
+        + "f({ b: 123 }); ");
+
+    // TODO(dimvar): We could warn about this since x is callable and we're
+    // passing a non-function, but we don't catch it for now.
+    checkNoWarnings(
+        "function f(x) {\n"
+        + "  if (x.randomName) {\n"
+        + "  } else {\n"
+        + "    return x();\n"
+        + "  }\n"
+        + "}\n"
+        + "f({ abc: 123 }); ");
   }
 
   public void testUnionOfRecords() {
@@ -3111,7 +3148,7 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         NewTypeInference.INVALID_ARGUMENT_TYPE);
 
     typeCheck(
-        "/** @param {function(... [number])} fnum */\n"
+        "/** @param {function(...number)} fnum */\n"
         + "function f(fnum) {\n"
         + "  fnum(); fnum(1, 2, 3, 'asdf');\n"
         + "}",
@@ -3177,7 +3214,7 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         RhinoErrorReporter.BAD_JSDOC_ANNOTATION);
 
     typeCheck(
-        "/** @type {function(... [number])} */ function f() {}"
+        "/** @type {function(...number)} */ function f() {}"
         + "f(); f(1, 2, 3); f(1, 2, 'asdf');",
         NewTypeInference.INVALID_ARGUMENT_TYPE);
 
@@ -3187,7 +3224,7 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         NewTypeInference.INVALID_ARGUMENT_TYPE);
 
     typeCheck(
-        "/** @type {function(... [number])} */ function f(x) {}",
+        "/** @type {function(...number)} */ function f(x) {}",
         RhinoErrorReporter.BAD_JSDOC_ANNOTATION);
 
     typeCheck(
@@ -3199,7 +3236,7 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         RhinoErrorReporter.BAD_JSDOC_ANNOTATION);
 
     typeCheck(
-        "/** @type {function(number=, ...[number])} */\n"
+        "/** @type {function(number=, ...number)} */\n"
         + "function f(x) {}\n"
         + "f('asdf');",
         NewTypeInference.INVALID_ARGUMENT_TYPE);
@@ -3219,8 +3256,8 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         NewTypeInference.INVALID_ARGUMENT_TYPE);
 
     typeCheck(
-        "function f(/** function(... [number]) */ fnum,"
-        + "  /** function(... [string]) */ fstr, cond) {\n"
+        "function f(/** function(...number) */ fnum,"
+        + "  /** function(...string) */ fstr, cond) {\n"
         + "  var y;\n"
         + "  if (cond) {\n"
         + "    y = fnum;\n"
@@ -3247,7 +3284,7 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
 
     typeCheck(
         "/** @param {function(string): *} x */ function g(x) {}\n"
-        + "/** @param {function(... [number]): string} x */ function f(x) {\n"
+        + "/** @param {function(...number): string} x */ function f(x) {\n"
         + "  g(x);\n"
         + "}",
         NewTypeInference.INVALID_ARGUMENT_TYPE);
@@ -3278,19 +3315,19 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
     checkNoWarnings(
         "/** @param {number=} x */ function f(x) { if (x) { x - 5; } }");
 
-    checkNoWarnings("function f(/** function(... [number]) */ x) {}\n"
+    checkNoWarnings("function f(/** function(...number) */ x) {}\n"
         + "f(function() {});");
 
     checkNoWarnings("function f(/** function() */ x) {}\n"
-        + "f(/** @type {function(... [number])} */ (function(nums) {}));");
+        + "f(/** @type {function(...number)} */ (function(nums) {}));");
 
     typeCheck(
         "function f(/** function(string=) */ x) {}\n"
-        + "f(/** @type {function(... [number])} */ (function(nums) {}));",
+        + "f(/** @type {function(...number)} */ (function(nums) {}));",
         NewTypeInference.INVALID_ARGUMENT_TYPE);
 
     typeCheck(
-        "function f(/** function(... [number]) */ x) {}\n"
+        "function f(/** function(...number) */ x) {}\n"
         + "f(/** @type {function(string=)} */ (function(x) {}));",
         NewTypeInference.INVALID_ARGUMENT_TYPE);
 
@@ -5038,6 +5075,8 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         + " * @template T, S\n"
         + " */\n"
         + "function f(){};");
+
+    checkNoWarnings("/** @param {(?)} x */ function f(x) {}");
   }
 
   public void testGenericsJsdocParsing() {
@@ -5551,9 +5590,9 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         + " * @param {T} y\n"
         + " */\n"
         + "function f(x, y) {}\n"
-        + "/** @type {function(number=, ...[string])} */\n"
+        + "/** @type {function(number=, ...string)} */\n"
         + "function g(x) {}\n"
-        + "/** @type {function(number=, ...[?])} */\n"
+        + "/** @type {function(number=, ...?)} */\n"
         + "function h(x) {}\n"
         + "f(g, h);");
 
@@ -5667,7 +5706,7 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
 
     checkNoWarnings("/**\n"
         + " * @template T\n"
-        + " * @param {function(... [T])} fun\n"
+        + " * @param {function(...T)} fun\n"
         + " */\n"
         + "function f(fun) {}\n"
         + "/** @param {...number} var_args */ function g(var_args) {}\n"
@@ -6618,6 +6657,14 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
     checkNoWarnings("var arr = [];\n"
         + "arr[0] = 5;\n"
         + "var /** Array<string> */ as = arr;");
+  }
+
+  public void testInferConstTypeFromGoogGetMsg() {
+    typeCheck(
+        "/** @const */\n"
+        + "var s = goog.getMsg('asdf');\n"
+        + "s - 1;\n",
+        NewTypeInference.INVALID_OPERAND_TYPE);
   }
 
   public void testInferConstTypeFromGenerics() {
@@ -9747,7 +9794,7 @@ public class NewTypeInferenceTest extends CompilerTypeTestCase {
         NewTypeInference.INVALID_OPERAND_TYPE);
 
     typeCheck(
-        "/** @param {function(string, ... [string])} fun */\n"
+        "/** @param {function(string, ...string)} fun */\n"
         + "function f(fun) {}\n"
         + "f(function(str, maybeStrs) { str - 5; });",
         NewTypeInference.INVALID_OPERAND_TYPE);
