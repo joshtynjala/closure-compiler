@@ -2415,9 +2415,6 @@ public class Parser {
     return peekExpression() || peek(TokenType.SPREAD);
   }
 
-  private static final EnumSet<TokenType> arraySubPatternFollowSet =
-      EnumSet.of(TokenType.COMMA, TokenType.CLOSE_SQUARE, TokenType.EQUAL);
-
   private static final EnumSet<TokenType> assignmentFollowSet =
       EnumSet.of(TokenType.EQUAL);
 
@@ -2428,7 +2425,7 @@ public class Parser {
     boolean rest = false;
 
     // [ or { are preferably the start of a sub-pattern
-    if (peekParenPattern(kind, arraySubPatternFollowSet)) {
+    if (peekParenPatternStart()) {
       lvalue = parseParenPattern(kind);
     } else {
       // An element that's not a sub-pattern

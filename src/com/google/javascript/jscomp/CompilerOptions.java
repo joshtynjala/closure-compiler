@@ -496,9 +496,6 @@ public class CompilerOptions implements Serializable, Cloneable {
   /** Controls which properties get renamed. */
   public PropertyRenamingPolicy propertyRenaming;
 
-  /** Should we use affinity information when generating property names. */
-  boolean propertyAffinity;
-
   /** Controls label renaming. */
   public boolean labelRenaming;
 
@@ -539,9 +536,6 @@ public class CompilerOptions implements Serializable, Cloneable {
   void setRenamePrefixNamespaceAssumeCrossModuleNames(boolean assume) {
     renamePrefixNamespaceAssumeCrossModuleNames = assume;
   }
-
-  /** Aliases true, false, and null to variables with shorter names. */
-  public boolean aliasKeywords;
 
   /** Flattens multi-level property names (e.g. a$b = x) */
   public boolean collapseProperties;
@@ -1025,13 +1019,11 @@ public class CompilerOptions implements Serializable, Cloneable {
     // Renaming
     variableRenaming = VariableRenamingPolicy.OFF;
     propertyRenaming = PropertyRenamingPolicy.OFF;
-    propertyAffinity = false;
     labelRenaming = false;
     generatePseudoNames = false;
     shadowVariables = false;
     preferStableNames = false;
     renamePrefix = null;
-    aliasKeywords = false;
     collapseProperties = false;
     collapseObjectLiterals = false;
     devirtualizePrototypeMethods = false;
@@ -1300,10 +1292,6 @@ public class CompilerOptions implements Serializable, Cloneable {
       PropertyRenamingPolicy newPropertyPolicy) {
     this.variableRenaming = newVariablePolicy;
     this.propertyRenaming = newPropertyPolicy;
-  }
-
-  public void setPropertyAffinity(boolean useAffinity) {
-    this.propertyAffinity = useAffinity;
   }
 
   /** Should shadow outer scope variable name during renaming. */
@@ -1979,10 +1967,6 @@ public class CompilerOptions implements Serializable, Cloneable {
 
   public void setRenamePrefixNamespace(String renamePrefixNamespace) {
     this.renamePrefixNamespace = renamePrefixNamespace;
-  }
-
-  public void setAliasKeywords(boolean aliasKeywords) {
-    this.aliasKeywords = aliasKeywords;
   }
 
   public void setCollapseProperties(boolean collapseProperties) {
