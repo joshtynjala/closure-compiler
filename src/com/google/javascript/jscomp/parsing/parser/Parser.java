@@ -732,7 +732,9 @@ public class Parser {
     while (peek(TokenType.COMMA)) {
       eat(TokenType.COMMA);
       type = parseType();
-      typeArguments.add(type);
+      if (type != null) {
+        typeArguments.add(type);
+      }
     }
     eat(TokenType.CLOSE_ANGLE);
 

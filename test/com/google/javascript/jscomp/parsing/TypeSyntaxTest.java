@@ -143,6 +143,21 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
     assertTypeEquals(expectedType, type);
   }
 
+  public void testParameterizedType_empty() {
+    expectErrors("Unexpected end of type expression");
+    parse("var x: my.parameterized.Type<ns.A, >;");
+  }
+
+  public void testParameterizedType_trailing1() {
+    expectErrors("'>' expected");
+    parse("var x: my.parameterized.Type<ns.A;");
+  }
+
+  public void testParameterizedType_trailing2() {
+    expectErrors("Unexpected end of type expression");
+    parse("var x: my.parameterized.Type<ns.A,;");
+  }
+
   private NamedType createNamedType(String typeName) {
     return registry.createNamedType(typeName, null, -1, -1);
   }
