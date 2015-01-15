@@ -20,6 +20,8 @@ import javax.annotation.Nullable;
 
 import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 
+import javax.annotation.Nullable;
+
 public class VariableDeclarationTree extends ParseTree {
   // An IdentifierExpressionTree, ArrayPatternTree or ObjectLiteralTree
   public final ParseTree lvalue;

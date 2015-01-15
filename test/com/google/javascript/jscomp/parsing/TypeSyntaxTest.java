@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 The Closure Compiler Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.javascript.jscomp.parsing;
 
 import com.google.javascript.jscomp.parsing.Config.LanguageMode;
@@ -29,19 +45,66 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
     testErrorReporter.setWarnings(warnings);
   }
 
-  public void testTypeSyntax_variableDeclaration() {
+  public void testVariableDeclaration() {
     JSTypeExpression type = parseTypeOfVar("var foo: string = 'hello';");
     assertTypeEquals(STRING_TYPE, type);
   }
 
-  public void testTypeSyntax_functionParamDeclaration() {
+  public void testVariableDeclaration_errorIncomplete() {
+    expectErrors("'identifier' expected");
+    parse("var foo: = 'hello';");
+  }
+
+  public void testTypeInDocAndSyntax() {
+    expectErrors("Bad type annotation - can only have JSDoc or inline type annotations, not both");
+    Node varDecl = parse("var /** string */ foo: string = 'hello';").getFirstChild();
+    assertTypeEquals(STRING_TYPE, varDecl.getFirstChild().getJSDocInfo().getType());
+  }
+
+  public void testFunctionParamDeclaration() {
     Node fn = parse("function foo(x: string) {}").getFirstChild();
     JSDocInfo paramInfo = fn.getFirstChild().getNext().getFirstChild().getJSDocInfo();
     assertTypeEquals(STRING_TYPE, paramInfo.getType());
   }
 
-  public void testTypeSyntax_functionReturn() {
+  public void testFunctionParamDeclaration_defaultValue() {
+    Node fn = parse("function foo(x: string = 'hello') {}").getFirstChild();
+    JSDocInfo paramInfo = fn.getFirstChild().getNext().getFirstChild().getJSDocInfo();
+    assertTypeEquals(STRING_TYPE, paramInfo.getType());
+  }
+
+  public void testFunctionParamDeclaration_destructuringArray() {
+    // TODO(martinprobst): implement.
+    expectErrors("',' expected");
+    parse("function foo([x]: string) {}");
+  }
+
+  public void testFunctionParamDeclaration_destructuringArrayInner() {
+    // TODO(martinprobst): implement.
+    expectErrors("']' expected");
+    parse("function foo([x: string]) {}");
+  }
+
+  public void testFunctionParamDeclaration_destructuringObject() {
+    // TODO(martinprobst): implement.
+    expectErrors("',' expected");
+    parse("function foo({x}: string) {}");
+  }
+
+  public void testFunctionParamDeclaration_arrow() {
+    Node fn = parse("(x: string) => 'hello' + x;").getFirstChild().getFirstChild();
+    JSDocInfo paramInfo = fn.getFirstChild().getNext().getFirstChild().getJSDocInfo();
+    assertTypeEquals(STRING_TYPE, paramInfo.getType());
+  }
+
+  public void testFunctionReturn() {
     Node fn = parse("function foo(): string { return 'hello'; }").getFirstChild();
+    JSDocInfo fnDocInfo = fn.getJSDocInfo();
+    assertTypeEquals(STRING_TYPE, fnDocInfo.getReturnType());
+  }
+
+  public void testFunctionReturn_arrow() {
+    Node fn = parse("(): string => 'hello';").getFirstChild().getFirstChild();
     JSDocInfo fnDocInfo = fn.getJSDocInfo();
     assertTypeEquals(STRING_TYPE, fnDocInfo.getReturnType());
   }
@@ -84,10 +147,6 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
     return registry.createNamedType(typeName, null, -1, -1);
   }
 
-  /**
-   * Verify that the given code has the given parse warnings.
-   * @return The parse tree.
-   */
   private Node parse(String string) {
     StaticSourceFile file = new SimpleSourceFile("input", false);
     Node script = ParserRunner.parse(file,
@@ -101,5 +160,4 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
 
     return script;
   }
-
 }
