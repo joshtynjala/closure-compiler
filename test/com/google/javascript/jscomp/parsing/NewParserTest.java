@@ -64,7 +64,6 @@ public class NewParserTest extends BaseJSTypeTestCase {
 
   private Config.LanguageMode mode;
   private boolean isIdeMode = false;
-  private boolean allowTypeSyntax = false;
 
   @Override
   protected void setUp() throws Exception {
