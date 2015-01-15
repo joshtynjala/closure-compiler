@@ -21,6 +21,8 @@ import javax.annotation.Nullable;
 import com.google.javascript.jscomp.parsing.parser.IdentifierToken;
 import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 
+import javax.annotation.Nullable;
+
 public class FunctionDeclarationTree extends ParseTree {
 
   public static enum Kind {
