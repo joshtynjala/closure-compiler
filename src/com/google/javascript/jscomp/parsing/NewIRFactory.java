@@ -459,6 +459,13 @@ class NewIRFactory {
     validateFunctionJsDoc(n);
   }
 
+  private void reportJsDocTypeSyntaxConflict(ParseTree parseTree) {
+    errorReporter.error("Bad type annotation"
+            + " - can only have JSDoc or inline type annotations, not both",
+        sourceName, lineno(parseTree), charno(parseTree));
+  }
+
+
   /**
    * Checks that JSDoc intended for a function is actually attached to a
    * function.
@@ -526,6 +533,7 @@ class NewIRFactory {
         // Object literal properties, catch declarations and variable
         // initializers are valid.
         case Token.NAME:
+        case Token.DEFAULT_VALUE:
           Node parent = n.getParent();
           switch (parent.getType()) {
             case Token.STRING_KEY:
@@ -802,6 +810,9 @@ class NewIRFactory {
     JSDocInfo info = handleInlineJsDoc(node, optionalInline);
     Node irNode = justTransform(node);
     if (info != null) {
+      if (irNode.getJSDocInfo() != null) {
+        reportJsDocTypeSyntaxConflict(node);
+      }
       irNode.setJSDocInfo(info);
     }
     setSourceInfo(irNode, node);
@@ -1311,11 +1322,9 @@ class NewIRFactory {
 
       if (functionTree.returnType != null) {
         JSTypeExpression returnType = convertTypeTree(functionTree.returnType);
-        // TODO(martinprobst): Reduce code duplication?
         JSDocInfoBuilder jsdocBuilder = JSDocInfoBuilder.maybeCopyFrom(node.getJSDocInfo());
         if (!jsdocBuilder.recordReturnType(returnType)) {
-          errorReporter.error("Bad type annotation", sourceName,
-              lineno(functionTree.returnType), charno(functionTree.returnType));
+          reportJsDocTypeSyntaxConflict(functionTree.returnType);
         }
         JSDocInfo info = jsdocBuilder.build(node);
         node.setJSDocInfo(info);
@@ -2156,9 +2165,9 @@ class NewIRFactory {
 
     @Override
     Node processTypedParameter(TypedParameterTree typeAnnotation) {
-      Node inner = process(typeAnnotation.inner);
-      maybeProcessType(inner, typeAnnotation.typeAnnotation);
-      return inner;
+      Node param = process(typeAnnotation.param);
+      maybeProcessType(param, typeAnnotation.typeAnnotation);
+      return param;
     }
 
     private void maybeProcessType(Node typeTarget, ParseTree typeTree) {
@@ -2168,9 +2177,7 @@ class NewIRFactory {
       JSTypeExpression typeExpression = convertTypeTree(typeTree);
       JSDocInfoBuilder jsdocBuilder = JSDocInfoBuilder.maybeCopyFrom(typeTarget.getJSDocInfo());
       if (!jsdocBuilder.recordType(typeExpression)) {
-        errorReporter.error(
-            "Bad type - can only have JSDoc or inline type annotations, not both",
-            sourceName, lineno(typeTree), charno(typeTree));
+        reportJsDocTypeSyntaxConflict(typeTree);
       }
       JSDocInfo info = jsdocBuilder.build(typeTarget);
       typeTarget.setJSDocInfo(info);

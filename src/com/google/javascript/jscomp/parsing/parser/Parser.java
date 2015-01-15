@@ -578,6 +578,9 @@ public class Parser {
       Parser p = createLookaheadParser();
       try {
         p.parseFormalParameterList();
+        if (p.peek(TokenType.COLON)) {
+          p.parseTypeAnnotation();
+        }
         return p.peek(TokenType.ARROW);
       } catch (ParseException e) {
         return false;
@@ -638,12 +641,14 @@ public class Parser {
       }
 
       ParseTree parameter;
+      ParseTree typeAnnotation = null;
+      SourceRange typeLocation = null;
       if (peekId()) {
         parameter = parseIdentifierExpression();
         if (peek(TokenType.COLON)) {
-          ParseTree typeAnnotation = parseTypeAnnotation();
-          parameter =
-              new TypedParameterTree(getTreeLocation(start), parameter, typeAnnotation);
+          SourcePosition typeStart = getTreeStartLocation();
+          typeAnnotation = parseTypeAnnotation();
+          typeLocation = getTreeLocation(typeStart);
         }
       } else if (peek(TokenType.OPEN_SQUARE)) {
         parameter = parseArrayPattern(PatternKind.INITIALIZER);
@@ -655,6 +660,11 @@ public class Parser {
         eat(TokenType.EQUAL);
         ParseTree defaultValue = parseAssignmentExpression();
         parameter = new DefaultParameterTree(getTreeLocation(start), parameter, defaultValue);
+      }
+
+      if (typeAnnotation != null) {
+        // Must be a direct child of the parameter list.
+        parameter = new TypedParameterTree(typeLocation, parameter, typeAnnotation);
       }
 
       result.add(parameter);
@@ -677,8 +687,7 @@ public class Parser {
     SourcePosition start = getTreeStartLocation();
     eat(TokenType.COLON);
     IdentifierToken token = eatIdOrKeywordAsId();
-    IdentifierExpressionTree typeInfo = new IdentifierExpressionTree(getTreeLocation(start), token);
-    return typeInfo;
+    return new IdentifierExpressionTree(getTreeLocation(start), token);
   }
 
   private BlockTree parseFunctionBody() {
