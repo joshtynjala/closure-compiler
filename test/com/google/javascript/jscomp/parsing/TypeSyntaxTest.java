@@ -51,7 +51,7 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
   }
 
   public void testVariableDeclaration_errorIncomplete() {
-    expectErrors("'identifier' expected");
+    expectErrors("Unexpected end of type expression");
     parse("var foo: = 'hello';");
   }
 
