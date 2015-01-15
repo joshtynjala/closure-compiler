@@ -57,8 +57,7 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
 
   public void testTypeInDocAndSyntax() {
     expectErrors("Bad type annotation - can only have JSDoc or inline type annotations, not both");
-    Node varDecl = parse("var /** string */ foo: string = 'hello';").getFirstChild();
-    assertTypeEquals(STRING_TYPE, varDecl.getFirstChild().getJSDocInfo().getType());
+    parse("var /** string */ foo: string = 'hello';");
   }
 
   public void testFunctionParamDeclaration() {
