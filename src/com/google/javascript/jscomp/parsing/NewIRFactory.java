@@ -2378,17 +2378,6 @@ class NewIRFactory {
     return config.languageMode != LanguageMode.ECMASCRIPT3;
   }
 
-  /* MOE:begin_strip */
-  // This check makes sure no non-experimental Google3 code can use type syntax yet, as the marker
-  // file is hidden through blaze visibility rules.
-  private static final boolean allowTypeSyntax;
-
-  static {
-    String markerFile = "/javascript/tools/jscompiler/allow-type-syntax.txt";
-    allowTypeSyntax = NewIRFactory.class.getResource(markerFile) != null;
-  }
-  /* MOE:end_strip */
-
   private boolean inStrictContext() {
     // TODO(johnlenz): in ECMASCRIPT5/6 is a "mixed" mode and we should track the context
     // that we are in, if we want to support it.
