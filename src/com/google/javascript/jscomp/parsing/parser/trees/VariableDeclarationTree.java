@@ -16,8 +16,6 @@
 
 package com.google.javascript.jscomp.parsing.parser.trees;
 
-import javax.annotation.Nullable;
-
 import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 
 import javax.annotation.Nullable;

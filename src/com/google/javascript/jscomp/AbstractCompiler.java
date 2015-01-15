@@ -265,11 +265,6 @@ public abstract class AbstractCompiler implements SourceExcerptProvider {
   abstract boolean acceptConstKeyword();
 
   /**
-   * @return Whether the compiler accepts type syntax ({@code var foo: string;}).
-   */
-  abstract boolean acceptTypeSyntax();
-
-  /**
    * Represents the different contexts for which the compiler could have
    * distinct configurations.
    */
