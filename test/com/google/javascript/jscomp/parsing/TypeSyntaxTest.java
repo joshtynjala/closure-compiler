@@ -128,6 +128,21 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
     assertTypeEquals(arrayOfString, parsedType);
   }
 
+  public void testArrayType_missingClose() {
+    expectErrors("']' expected");
+    parse("var foo: string[;");
+  }
+
+  public void testArrayType_namespaced() {
+    Node varDecl = parse("var foo: mymod.ns.Type[];").getFirstChild();
+    JSTypeExpression parsedType = varDecl.getFirstChild().getJSDocInfo().getType();
+
+    JSType arrayOfTypes =
+        createNullableType(createTemplatizedType(ARRAY_TYPE,
+            createNullableType(registry.createNamedType("mymod.ns.Type", null, -1, -1))));
+    assertTypeEquals(arrayOfTypes, parsedType);
+  }
+
   private JSTypeExpression parseTypeOfVar(String expr) {
     Node varDecl = parse(expr).getFirstChild();
     JSTypeExpression parsedType = varDecl.getFirstChild().getJSDocInfo().getType();
