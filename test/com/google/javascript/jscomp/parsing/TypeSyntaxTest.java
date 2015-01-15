@@ -111,8 +111,7 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
 
   public void testCompositeType() {
     JSTypeExpression type = parseTypeOfVar("var foo: mymod.ns.Type;");
-    JSType namedType =
-        registry.createNullableType(registry.createNamedType("mymod.ns.Type", null, -1, -1));
+    JSType namedType = createNullableType(createNamedType("mymod.ns.Type"));
     assertTypeEquals(namedType, type);
   }
 
@@ -139,7 +138,7 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
 
     JSType arrayOfTypes =
         createNullableType(createTemplatizedType(ARRAY_TYPE,
-            createNullableType(registry.createNamedType("mymod.ns.Type", null, -1, -1))));
+            createNullableType(createNamedType("mymod.ns.Type"))));
     assertTypeEquals(arrayOfTypes, parsedType);
   }
 
