@@ -120,6 +120,7 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
     expectErrors("'identifier' expected");
     parse("var foo: mymod.Type.;");
   }
+
   private Node parse(String string) {
     StaticSourceFile file = new SimpleSourceFile("input", false);
     Node script = ParserRunner.parse(file,
