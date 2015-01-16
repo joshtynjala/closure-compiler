@@ -728,7 +728,6 @@ public class Parser {
       }
       identifier.append(token.value);
     }
-    // Dotted type names are represented as single strings with the identifiers concatenated.
     return new TypeNameTree(getTreeLocation(start), identifier.toString());
   }
 
