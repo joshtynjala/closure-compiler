@@ -171,6 +171,26 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
     parse("var x: my.parameterized.Type<ns.A,;");
   }
 
+  public void testFieldDeclaration() throws Exception {
+    parse("class Foo { foo; }");
+  }
+
+  public void testFieldDeclaration_initialiser() throws Exception {
+    // TODO(martinprobst): Implement.
+    expectErrors("';' expected");
+    parse("class Foo { foo = 12; }");
+  }
+
+  public void testFieldDeclaration_type() throws Exception {
+    parse("class Foo { foo: number; }");
+  }
+
+  public void testFieldDeclaration_typeInitialiser() throws Exception {
+    // TODO(martinprobst): Implement.
+    expectErrors("';' expected");
+    parse("class Foo { foo: number = 12; }");
+  }
+
   private NamedType createNamedType(String typeName) {
     return registry.createNamedType(typeName, null, -1, -1);
   }

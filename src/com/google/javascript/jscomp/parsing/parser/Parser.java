@@ -443,10 +443,10 @@ public class Parser {
     if (peekSetAccessor(true)) {
       return parseSetAccessor();
     }
-    return parseMethodDeclaration(true);
+    return parseClassMemberDeclaration(true);
   }
 
-  private ParseTree parseMethodDeclaration(boolean allowStatic) {
+  private ParseTree parseClassMemberDeclaration(boolean allowStatic) {
     SourcePosition start = getTreeStartLocation();
     boolean isStatic = false;
     if (allowStatic && peek(TokenType.STATIC) && peekType(1) != TokenType.OPEN_PAREN) {
@@ -454,18 +454,46 @@ public class Parser {
       isStatic = true;
     }
     boolean isGenerator = eatOpt(TokenType.STAR) != null;
+
+    ParseTree nameExpr;
+    IdentifierToken name;
     TokenType type = peekType();
     if (type == TokenType.IDENTIFIER || Keywords.isKeyword(type)) {
-      IdentifierToken name = eatIdOrKeywordAsId();
-      return parseFunctionTail(
-          start, name, isStatic, isGenerator,
-          FunctionDeclarationTree.Kind.MEMBER);
+      nameExpr = null;
+      name = eatIdOrKeywordAsId();
     } else {
-      ParseTree name = parseComputedPropertyName();
-      ParseTree function = parseFunctionTail(
-          start, null, isStatic, isGenerator,
-          FunctionDeclarationTree.Kind.EXPRESSION);
-      return new ComputedPropertyMethodTree(getTreeLocation(start), name, function);
+      nameExpr = parseComputedPropertyName();
+      name = null;
+    }
+
+    if (peek(TokenType.OPEN_PAREN)) {
+      // Member function.
+      FunctionDeclarationTree.Kind kind =
+          nameExpr == null ? FunctionDeclarationTree.Kind.MEMBER
+              : FunctionDeclarationTree.Kind.EXPRESSION;
+      ParseTree function = parseFunctionTail(start, name, isStatic, isGenerator, kind);
+      if (kind == FunctionDeclarationTree.Kind.MEMBER) {
+        return function;
+      } else {
+        return new ComputedPropertyMethodTree(getTreeLocation(start), nameExpr, function);
+      }
+    } else {
+      // Member variable.
+      if (isGenerator) {
+        reportError("Member variable cannot be prefixed by '*' (generator function)");
+      }
+      ParseTree declaredType = null;
+      if (peek(TokenType.COLON)) {
+        declaredType = parseTypeAnnotation();
+      }
+      // TODO(martinprobst): Initializer.
+      eat(TokenType.SEMI_COLON);
+      if (nameExpr == null) {
+        return new MemberVariableTree(getTreeLocation(start), name, declaredType);
+      } else {
+        return new ComputedPropertyMemberVariableTree(getTreeLocation(start), nameExpr,
+            declaredType);
+      }
     }
   }
 
@@ -1667,7 +1695,7 @@ public class Parser {
       } else if (peekSetAccessor(false)) {
         return parseSetAccessor();
       } else if (peekType(1) == TokenType.OPEN_PAREN) {
-        return parseMethodDeclaration(false);
+        return parseClassMemberDeclaration(false);
       } else {
         return parsePropertyNameAssignment();
       }
@@ -1696,7 +1724,7 @@ public class Parser {
         || type == TokenType.IDENTIFIER
         || Keywords.isKeyword(type)) {
       // parseMethodDeclaration will consume the '*'.
-      return parseMethodDeclaration(false);
+      return parseClassMemberDeclaration(false);
     } else {
       SourcePosition start = getTreeStartLocation();
       eat(TokenType.STAR);
