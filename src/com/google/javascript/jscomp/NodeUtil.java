@@ -1765,7 +1765,7 @@ public final class NodeUtil {
    * Finds the class member containing the given node.
    */
   static Node getEnclosingClassMember(Node n) {
-    return getEnclosingType(n, Token.MEMBER_DEF);
+    return getEnclosingType(n, Token.MEMBER_FUNCTION_DEF);
   }
 
   /**

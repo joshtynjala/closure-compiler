@@ -162,7 +162,7 @@ public class Token {
 
         CLASS          = 158, // classes
         CLASS_MEMBERS  = 159, // class member container
-        MEMBER_DEF     = 160,
+        MEMBER_FUNCTION_DEF     = 160,
         SUPER          = 161,
 
         LET            = 162, // block scoped vars
@@ -319,7 +319,7 @@ public class Token {
           case OBJECT_PATTERN:  return "OBJECT_PATTERN";
           case CLASS:           return "CLASS";
           case CLASS_MEMBERS:   return "CLASS_MEMBERS";
-          case MEMBER_DEF:      return "MEMBER_DEF";
+          case MEMBER_FUNCTION_DEF:    return "MEMBER_DEF";
           case SUPER:           return "SUPER";
           case LET:             return "LET";
           case FOR_OF:          return "FOR_OF";
@@ -398,7 +398,7 @@ public class Token {
       case TEMPLATELIT_SUB: return 1;
       case TRY:             return -1;
       case CLASS:           return 3;
-      case MEMBER_DEF:      return 1;
+      case MEMBER_FUNCTION_DEF:      return 1;
       case PARAM_LIST:      return -1;
       case DEFAULT_VALUE:   return 2;
       case COMMA:           return 2;

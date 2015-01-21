@@ -2149,7 +2149,7 @@ public class Node implements Cloneable, Serializable {
   /**
    * Sets whether this node is a static member node. This
    * method is meaningful only on {@link Token#GETTER_DEF},
-   * {@link Token#SETTER_DEF} or {@link Token#MEMBER_DEF} nodes contained
+   * {@link Token#SETTER_DEF} or {@link Token#MEMBER_FUNCTION_DEF} nodes contained
    * within {@link Token#CLASS}.
    */
   public void setStaticMember(boolean isStatic) {
@@ -2159,7 +2159,7 @@ public class Node implements Cloneable, Serializable {
   /**
    * Returns whether this node is a static member node. This
    * method is meaningful only on {@link Token#GETTER_DEF},
-   * {@link Token#SETTER_DEF} or {@link Token#MEMBER_DEF} nodes contained
+   * {@link Token#SETTER_DEF} or {@link Token#MEMBER_FUNCTION_DEF} nodes contained
    * within {@link Token#CLASS}.
    */
   public boolean isStaticMember() {
@@ -2169,7 +2169,7 @@ public class Node implements Cloneable, Serializable {
   /**
    * Sets whether this node is a generator node. This
    * method is meaningful only on {@link Token#FUNCTION} or
-   * {@link Token#MEMBER_DEF} nodes.
+   * {@link Token#MEMBER_FUNCTION_DEF} nodes.
    */
   public void setIsGeneratorFunction(boolean isGenerator) {
     putBooleanProp(GENERATOR_FN, isGenerator);
@@ -2230,7 +2230,7 @@ public class Node implements Cloneable, Serializable {
   /**
    * Sets whether this node is a generator node. This
    * method is meaningful only on {@link Token#FUNCTION} or
-   * {@link Token#MEMBER_DEF} nodes.
+   * {@link Token#MEMBER_FUNCTION_DEF} nodes.
    */
   public void setYieldFor(boolean isGenerator) {
     putBooleanProp(YIELD_FOR, isGenerator);
@@ -2239,7 +2239,7 @@ public class Node implements Cloneable, Serializable {
   /**
    * Returns whether this node is a generator node. This
    * method is meaningful only on {@link Token#FUNCTION} or
-   * {@link Token#MEMBER_DEF} nodes.
+   * {@link Token#MEMBER_FUNCTION_DEF} nodes.
    */
   public boolean isYieldFor() {
     return getBooleanProp(YIELD_FOR);
@@ -2643,8 +2643,8 @@ public class Node implements Cloneable, Serializable {
     return this.getType() == Token.LET;
   }
 
-  public boolean isMemberDef() {
-    return this.getType() == Token.MEMBER_DEF;
+  public boolean isMemberFunctionDef() {
+    return this.getType() == Token.MEMBER_FUNCTION_DEF;
   }
 
   public boolean isName() {

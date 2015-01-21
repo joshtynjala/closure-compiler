@@ -492,7 +492,7 @@ class CodeGenerator {
 
       case Token.GETTER_DEF:
       case Token.SETTER_DEF:
-      case Token.MEMBER_DEF: {
+      case Token.MEMBER_FUNCTION_DEF: {
         n.getParent().toStringTree();
         Preconditions.checkState(n.getParent().isObjectLit()
             || n.getParent().isClassMembers());
@@ -507,7 +507,7 @@ class CodeGenerator {
         }
 
         if (n.getFirstChild().isGeneratorFunction()) {
-          Preconditions.checkState(type == Token.MEMBER_DEF);
+          Preconditions.checkState(type == Token.MEMBER_FUNCTION_DEF);
           add("*");
         }
 
@@ -522,7 +522,7 @@ class CodeGenerator {
             Preconditions.checkState(first.getChildAtIndex(1).hasOneChild());
             add("set ");
             break;
-          case Token.MEMBER_DEF:
+          case Token.MEMBER_FUNCTION_DEF:
             // nothing to do.
             break;
         }
@@ -920,7 +920,7 @@ class CodeGenerator {
               || c.isGetterDef()
               || c.isSetterDef()
               || c.isStringKey()
-              || c.isMemberDef());
+              || c.isMemberFunctionDef());
           add(c);
         }
         add("}");

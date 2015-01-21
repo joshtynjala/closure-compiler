@@ -129,7 +129,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
           }
         }
         break;
-      case Token.MEMBER_DEF:
+      case Token.MEMBER_FUNCTION_DEF:
         if (parent.isObjectLit()) {
           visitMemberDefInObjectLit(n, parent);
         }
@@ -734,7 +734,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
         continue;
       }
 
-      if (member.isMemberDef() && member.getString().equals("constructor")) {
+      if (member.isMemberFunctionDef() && member.getString().equals("constructor")) {
         ctorJSDocInfo = member.getJSDocInfo();
         constructor = member.getFirstChild().detachFromParent();
         if (!anonymous) {
@@ -744,7 +744,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
       } else {
         Node qualifiedMemberName;
         Node method;
-        if (member.isMemberDef()) {
+        if (member.isMemberFunctionDef()) {
           if (member.isStaticMember()) {
             qualifiedMemberName = NodeUtil.newQName(
                 compiler,
