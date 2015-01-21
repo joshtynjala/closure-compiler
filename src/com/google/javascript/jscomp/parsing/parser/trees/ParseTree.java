@@ -65,6 +65,8 @@ public class ParseTree {
     return (ComputedPropertyGetterTree) this; }
   public ComputedPropertyMethodTree asComputedPropertyMethod() {
     return (ComputedPropertyMethodTree) this; }
+  public ComputedPropertyMemberVariableTree asComputedPropertyMemberVariable() {
+    return (ComputedPropertyMemberVariableTree) this; }
   public ComputedPropertySetterTree asComputedPropertySetter() {
     return (ComputedPropertySetterTree) this; }
   public ConditionalExpressionTree asConditionalExpression() {

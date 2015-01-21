@@ -29,6 +29,7 @@ abstract class NewTypeSafeDispatcher<T> {
   abstract T processCatchClause(CatchTree tree);
   abstract T processComputedPropertyDefinition(ComputedPropertyDefinitionTree tree);
   abstract T processComputedPropertyGetter(ComputedPropertyGetterTree tree);
+  abstract T processComputedPropertyMemberVariable(ComputedPropertyMemberVariableTree tree);
   abstract T processComputedPropertyMethod(ComputedPropertyMethodTree tree);
   abstract T processComputedPropertySetter(ComputedPropertySetterTree tree);
   abstract T processConditionalExpression(ConditionalExpressionTree tree);
@@ -104,6 +105,7 @@ abstract class NewTypeSafeDispatcher<T> {
   abstract T processTypeName(TypeNameTree tree);
   abstract T processTypedParameter(TypedParameterTree asTypeAnnotation);
   abstract T processParameterizedType(ParameterizedTypeTree tree);
+  abstract T processMemberVariable(MemberVariableTree tree);
 
   abstract T processMissingExpression(MissingPrimaryExpressionTree tree);
 
@@ -196,6 +198,8 @@ abstract class NewTypeSafeDispatcher<T> {
         return processComputedPropertyDefinition(node.asComputedPropertyDefinition());
       case COMPUTED_PROPERTY_GETTER:
         return processComputedPropertyGetter(node.asComputedPropertyGetter());
+      case COMPUTED_PROPERTY_MEMBER_VARIABLE:
+        return processComputedPropertyMemberVariable(node.asComputedPropertyMemberVariable());
       case COMPUTED_PROPERTY_METHOD:
         return processComputedPropertyMethod(node.asComputedPropertyMethod());
       case COMPUTED_PROPERTY_SETTER:
@@ -295,6 +299,8 @@ abstract class NewTypeSafeDispatcher<T> {
         return processTypedParameter(node.asTypedParameter());
       case PARAMETERIZED_TYPE_TREE:
         return processParameterizedType(node.asParameterizedType());
+      case MEMBER_VARIABLE:
+        return processMemberVariable(node.asMemberVariable());
 
       default:
         break;

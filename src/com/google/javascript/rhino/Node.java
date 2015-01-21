@@ -123,10 +123,11 @@ public class Node implements Cloneable, Serializable {
                                   // to avoid analyzing them during
                                   // NewTypeInference. We remove this attribute
                                   // in the fwd direction of NewTypeInference.
-      CONSTANT_PROPERTY_DEF = 76; // Used to communicate information between
+      CONSTANT_PROPERTY_DEF = 76, // Used to communicate information between
                                   // GlobalTypeInfo and NewTypeInference.
                                   // We use this to tag getprop nodes that
                                   // declare properties.
+      COMPUTED_PROP_MEMBER_VARIABLE = 77; // A computed property that has a member variable.
 
 
   public static final int   // flags for INCRDECR_PROP

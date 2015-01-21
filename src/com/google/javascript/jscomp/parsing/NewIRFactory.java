@@ -43,6 +43,7 @@ import com.google.javascript.jscomp.parsing.parser.trees.ComprehensionIfTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ComprehensionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ComputedPropertyDefinitionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ComputedPropertyGetterTree;
+import com.google.javascript.jscomp.parsing.parser.trees.ComputedPropertyMemberVariableTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ComputedPropertyMethodTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ComputedPropertySetterTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ConditionalExpressionTree;
@@ -70,6 +71,7 @@ import com.google.javascript.jscomp.parsing.parser.trees.LabelledStatementTree;
 import com.google.javascript.jscomp.parsing.parser.trees.LiteralExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.MemberExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.MemberLookupExpressionTree;
+import com.google.javascript.jscomp.parsing.parser.trees.MemberVariableTree;
 import com.google.javascript.jscomp.parsing.parser.trees.MissingPrimaryExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ModuleImportTree;
 import com.google.javascript.jscomp.parsing.parser.trees.NewExpressionTree;
@@ -531,6 +533,10 @@ class NewIRFactory {
         // Function declarations are valid
         case Token.FUNCTION:
           valid = isFunctionDeclaration(n);
+          break;
+        case Token.MEMBER_VARIABLE_DEF:
+          // Typed member variable.
+          valid = true;
           break;
         // Object literal properties, catch declarations and variable
         // initializers are valid.
@@ -1580,6 +1586,17 @@ class NewIRFactory {
     }
 
     @Override
+    Node processComputedPropertyMemberVariable(ComputedPropertyMemberVariableTree tree) {
+      maybeWarnEs6Feature(tree, "computed property");
+      maybeWarnTypeSyntax(tree);
+
+      Node n = newNode(Token.COMPUTED_PROP, transform(tree.property));
+      maybeProcessType(n, tree.declaredType);
+      n.putBooleanProp(Node.COMPUTED_PROP_MEMBER_VARIABLE, true);
+      return n;
+    }
+
+    @Override
     Node processComputedPropertyMethod(ComputedPropertyMethodTree tree) {
       maybeWarnEs6Feature(tree, "computed property");
 
@@ -2082,6 +2099,13 @@ class NewIRFactory {
     Node processSuper(SuperExpressionTree tree) {
       maybeWarnEs6Feature(tree, "super");
       return newNode(Token.SUPER);
+    }
+
+    @Override
+    Node processMemberVariable(MemberVariableTree tree) {
+      Node member = newStringNode(Token.MEMBER_VARIABLE_DEF, tree.name.value);
+      maybeProcessType(member, tree.declaredType);
+      return member;
     }
 
     @Override

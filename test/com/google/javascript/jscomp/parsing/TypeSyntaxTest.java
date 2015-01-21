@@ -171,21 +171,32 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
     parse("var x: my.parameterized.Type<ns.A,;");
   }
 
-  public void testFieldDeclaration() throws Exception {
+  public void testMemberVariable() throws Exception {
     parse("class Foo { foo; }");
   }
 
-  public void testFieldDeclaration_initialiser() throws Exception {
+  public void testComputedPropertyMemberVariable() throws Exception {
+    parse("class Foo { ['foo']; }");
+  }
+
+  public void testMemberVariable_initialiser() throws Exception {
     // TODO(martinprobst): Implement.
     expectErrors("';' expected");
     parse("class Foo { foo = 12; }");
   }
 
-  public void testFieldDeclaration_type() throws Exception {
+  public void testMemberVariable_type() throws Exception {
     parse("class Foo { foo: number; }");
   }
 
-  public void testFieldDeclaration_typeInitialiser() throws Exception {
+  public void testMemberVariable_typeFn() throws Exception {
+    Node ast = parse("class Foo {  /** @return {number} */ foo() { return 12; } }");
+    System.out.println(ast);
+    ast = parse("/** @type {string} */ Foo.prototype.bar;");
+    System.out.println(ast);
+  }
+
+  public void testMemberVariable_typeInitialiser() throws Exception {
     // TODO(martinprobst): Implement.
     expectErrors("';' expected");
     parse("class Foo { foo: number = 12; }");

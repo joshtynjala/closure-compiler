@@ -190,6 +190,7 @@ public class Token {
 
         DEFAULT_VALUE   = 178, // Formal parameter or destructuring element
                                // with a default value
+        MEMBER_VARIABLE_DEF = 179,
 
         // JSDoc-only tokens
         ANNOTATION     = 300,
@@ -336,6 +337,7 @@ public class Token {
           case SPREAD:          return "SPREAD";
           case COMPUTED_PROP:   return "COMPUTED_PROP";
           case DEFAULT_VALUE:   return "DEFAULT_VALUE";
+          case MEMBER_VARIABLE_DEF:    return "MEMBER_VARIABLE_DEF";
 
           case PLACEHOLDER1:        return "PLACEHOLDER1";
           case PLACEHOLDER2:        return "PLACEHOLDER2";

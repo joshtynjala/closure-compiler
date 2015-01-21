@@ -497,7 +497,7 @@ public class Parser {
     }
   }
 
-  private ParseTree parseFunctionTail(
+  private FunctionDeclarationTree parseFunctionTail(
       SourcePosition start, IdentifierToken name,
       boolean isStatic, boolean isGenerator,
       FunctionDeclarationTree.Kind kind) {
