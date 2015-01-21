@@ -6,7 +6,6 @@ import com.google.javascript.jscomp.parsing.JsDocInfoParser;
 import junit.framework.TestCase;
 
 import javax.annotation.CheckReturnValue;
-
 import java.util.LinkedHashMap;
 
 import static com.google.common.truth.Truth.THROW_ASSERTION_ERROR;
@@ -23,7 +22,6 @@ import static com.google.javascript.rhino.Token.OBJECTLIT;
 import static com.google.javascript.rhino.Token.PARAMETERIZED_TYPE;
 import static com.google.javascript.rhino.Token.REST_PARAMETER_TYPE;
 import static com.google.javascript.rhino.Token.STRING_TYPE;
-import static com.google.javascript.rhino.Token.UNION_TYPE;
 import static com.google.javascript.rhino.Token.UNKNOWN_TYPE;
 import static com.google.javascript.rhino.Token.VOID_TYPE;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.booleanType;
@@ -166,7 +164,8 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     if (oldAST == null) {
       fail(typeExpr + " did not produce a parsed AST");
     }
-    return new NodeSubject(THROW_ASSERTION_ERROR, TypeDeclarationsIRFactory.convertTypeNodeAST(oldAST));
+    return new NodeSubject(THROW_ASSERTION_ERROR,
+        TypeDeclarationsIRFactory.convertTypeNodeAST(oldAST));
   }
 
   private class NodeSubject extends Subject<NodeSubject, Node> {

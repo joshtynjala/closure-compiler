@@ -16,37 +16,77 @@ import static com.google.javascript.rhino.Node.TypeDeclarationNode;
  * closure-style type declarations in a JSDoc node (via a conversion from the rhino AST
  * produced in {@link com.google.javascript.jscomp.parsing.NewIRFactory}) as well as
  * those created from TypeScript-style inline type declarations.
+ *
+ * This is an alternative to the AST found in the root property of JSTypeExpression, which
+ * is a crufty AST that reuses language tokens.
  */
 public class TypeDeclarationsIRFactory {
 
+  /**
+   * @return a new node representing the string built-in type.
+   */
   public static TypeDeclarationNode stringType() {
     return new TypeDeclarationNode(Token.STRING_TYPE);
   }
 
+  /**
+   * @return a new node representing the number built-in type.
+   */
   public static TypeDeclarationNode numberType() {
     return new TypeDeclarationNode(Token.NUMBER_TYPE);
   }
 
+  /**
+   * @return a new node representing the boolean built-in type.
+   */
   public static TypeDeclarationNode booleanType() {
     return new TypeDeclarationNode(Token.BOOLEAN_TYPE);
   }
 
+  /**
+   * @return a new node representing the null built-in type.
+   */
   public static TypeDeclarationNode nullType() {
     return new TypeDeclarationNode(Token.NULL_TYPE);
   }
 
+  /**
+   * Equivalent to the UNKNOWN type in Closure, expressed with {@code {?}}
+   * @return a new node representing any type, without type checking.
+   */
   public static TypeDeclarationNode anyType() {
     return new TypeDeclarationNode(Token.ANY_TYPE);
   }
 
+  /**
+   * @return a new node representing the Void type as defined by TypeScript.
+   */
   public static TypeDeclarationNode voidType() {
     return new TypeDeclarationNode(Token.VOID_TYPE);
   }
 
+  /**
+   * @return a new node representing a type which is not declared.
+   */
   public static TypeDeclarationNode unknownType() {
     return new TypeDeclarationNode(Token.UNKNOWN_TYPE);
   }
 
+  /**
+   * Produces a tree structure similar to the Rhino AST of a qualified name expression, under
+   * a top-level NAMED_TYPE node.
+   *
+   * <p>Example:
+   * <pre>
+   * NAMED_TYPE
+   *   NAME goog
+   *     STRING ui
+   *       STRING Window
+   * </pre>
+   *
+   * @param typeName a qualified name such as "goog.ui.Window"
+   * @return a new node representing the type
+   */
   public static TypeDeclarationNode namedType(String typeName) {
     Iterator<String> parts = Splitter.on(".").split(typeName).iterator();
     Node node = IR.name(parts.next());
@@ -56,7 +96,23 @@ public class TypeDeclarationsIRFactory {
     return new TypeDeclarationNode(Token.NAMED_TYPE, node);
   }
 
-  public static TypeDeclarationNode recordType(LinkedHashMap<String, TypeDeclarationNode> properties) {
+  /**
+   * Represents a structural type.
+   * Closure calls this a Record Type and accepts the syntax {@code {myNum: number, myObject}}
+   *
+   * <p>Example:
+   * <pre>
+   * OBJECTLIT
+   *   STRING_KEY myNum
+   *     NUMBER_TYPE
+   *   STRING_KEY myObject
+   *     UNKNOWN_TYPE
+   * </pre>
+   * @param properties a map from property name to property type
+   * @return a new node representing the record type
+   */
+  public static TypeDeclarationNode recordType(
+      LinkedHashMap<String, TypeDeclarationNode> properties) {
     TypeDeclarationNode node = new TypeDeclarationNode(Token.OBJECTLIT);
     for (Map.Entry<String, TypeDeclarationNode> property : properties.entrySet()) {
       Node stringKey = IR.stringKey(property.getKey());
@@ -66,7 +122,27 @@ public class TypeDeclarationsIRFactory {
     return node;
   }
 
-  public static TypeDeclarationNode functionType(Node returnType, LinkedHashMap<String, TypeDeclarationNode> parameters) {
+  /**
+   * Represents a function type.
+   * Closure has syntax like {@code {function(string, boolean):number}}
+   * Closure doesn't include parameter names. If the parameter types are unnamed,
+   * arbitrary names can be substituted, eg. p1, p2, etc.
+   *
+   * <p>Example:
+   * <pre>
+   * FUNCTION_TYPE
+   *   NUMBER_TYPE
+   *   STRING_KEY p1
+   *     STRING_TYPE
+   *   STRING_KEY p2
+   *     BOOLEAN_TYPE
+   * </pre>
+   * @param returnType the type returned by the function, possibly UNKNOWN_TYPE
+   * @param parameters the types of the parameters.
+   * @return
+   */
+  public static TypeDeclarationNode functionType(
+      Node returnType, LinkedHashMap<String, TypeDeclarationNode> parameters) {
     TypeDeclarationNode node = new TypeDeclarationNode(Token.FUNCTION_TYPE, returnType);
     for (Map.Entry<String, TypeDeclarationNode> parameter : parameters.entrySet()) {
       Node stringKey = IR.stringKey(parameter.getKey());
@@ -76,7 +152,24 @@ public class TypeDeclarationsIRFactory {
     return node;
   }
 
-  public static TypeDeclarationNode parameterizedType(Node baseType, Iterable<TypeDeclarationNode> typeParameters) {
+  /**
+   * Represents a parameterized, or generic, type.
+   * Closure calls this a Type Application and accepts syntax like {@code {Object.<string, number>}}
+   *
+   * <p>Example:
+   * <pre>
+   * PARAMETERIZED_TYPE
+   *   NAMED_TYPE
+   *     NAME Object
+   *   STRING_TYPE
+   *   NUMBER_TYPE
+   * </pre>
+   * @param baseType
+   * @param typeParameters
+   * @return
+   */
+  public static TypeDeclarationNode parameterizedType(
+      Node baseType, Iterable<TypeDeclarationNode> typeParameters) {
     TypeDeclarationNode node = new TypeDeclarationNode(Token.PARAMETERIZED_TYPE, baseType);
     for (Node typeParameter : typeParameters) {
       node.addChildToBack(typeParameter);
@@ -84,6 +177,19 @@ public class TypeDeclarationsIRFactory {
     return node;
   }
 
+  /**
+   * Represents a union type, which can be one of the given types.
+   * Closure accepts syntax like {@code {(number|boolean)}}
+   *
+   * <p>Example:
+   * <pre>
+   * UNION_TYPE
+   *   NUMBER_TYPE
+   *   BOOLEAN_TYPE
+   * </pre>
+   * @param options the types which are accepted
+   * @return a new node representing the union type
+   */
   public static TypeDeclarationNode unionType(Iterable<TypeDeclarationNode> options) {
     TypeDeclarationNode node = new TypeDeclarationNode(Token.UNION_TYPE);
     for (Node option : options) {
@@ -96,6 +202,25 @@ public class TypeDeclarationsIRFactory {
     return unionType(Arrays.asList(options));
   }
 
+  /**
+   * Represents a function parameter type which may be repeated.
+   * Closure calls this Variable Parameters and accepts a syntax like
+   * {@code {function(string, ...number): number}}
+   *
+   * <p>
+   * <pre>
+   * FUNCTION_TYPE
+   *   NUMBER_TYPE
+   *   STRING_KEY p1
+   *     STRING_TYPE
+   *   STRING_KEY p2
+   *     REST_PARAMETER_TYPE
+   *       NUMBER_TYPE
+   * </pre>
+   * @param type the type each of the parameters should have.
+   *             (NB: TypeScript instead gives the array type that is seen inside the function)
+   * @return a new node representing the function parameter type
+   */
   public static TypeDeclarationNode restParams(TypeDeclarationNode type) {
     return new TypeDeclarationNode(Token.REST_PARAMETER_TYPE, type);
   }
