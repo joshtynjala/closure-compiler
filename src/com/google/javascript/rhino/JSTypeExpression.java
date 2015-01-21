@@ -120,4 +120,9 @@ public final class JSTypeExpression implements Serializable {
   public Node getRoot() {
     return root;
   }
+
+  @Override
+  public String toString() {
+    return "type: " + root.toString();
+  }
 }

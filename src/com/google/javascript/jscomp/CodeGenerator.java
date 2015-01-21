@@ -229,6 +229,7 @@ class CodeGenerator {
 
       case Token.NAME:
         addIdentifier(n.getString());
+        maybeAddTypeDecl(n);
         if (first != null && !first.isEmpty()) {
           Preconditions.checkState(childCount == 1);
           cc.addOp("=", true);
@@ -260,6 +261,7 @@ class CodeGenerator {
 
       case Token.DEFAULT_VALUE:
         add(first);
+        maybeAddTypeDecl(n);
         cc.addOp("=", true);
         add(first.getNext());
         break;
@@ -1029,6 +1031,13 @@ class CodeGenerator {
     }
 
     cc.endSourceMapping(n);
+  }
+
+  private void maybeAddTypeDecl(Node n) {
+    if (preserveTypeAnnotations && n.getJSTypeExpression() != null) {
+      add(": ");
+      add(n.getJSTypeExpression().getRoot());
+    }
   }
 
   /**

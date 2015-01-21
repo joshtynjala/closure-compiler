@@ -276,8 +276,11 @@ class NewIRFactory {
       case ECMASCRIPT6_STRICT:
         reservedKeywords = ES5_STRICT_RESERVED_KEYWORDS;
         break;
+      case ECMASCRIPT6_TYPED:
+        reservedKeywords = ES5_STRICT_RESERVED_KEYWORDS;
+        break;
       default:
-        throw new IllegalStateException("unknown language mode");
+        throw new IllegalStateException("unknown language mode: " + config.languageMode);
     }
   }
 
@@ -460,7 +463,7 @@ class NewIRFactory {
   }
 
   private void reportJsDocTypeSyntaxConflict(ParseTree parseTree) {
-    errorReporter.error("Bad type annotation"
+    errorReporter.error("Bad type syntax"
             + " - can only have JSDoc or inline type annotations, not both",
         sourceName, lineno(parseTree), charno(parseTree));
   }
@@ -810,7 +813,7 @@ class NewIRFactory {
     JSDocInfo info = handleInlineJsDoc(node, optionalInline);
     Node irNode = justTransform(node);
     if (info != null) {
-      if (irNode.getJSDocInfo() != null) {
+      if (irNode.getJSTypeExpression() != null) {
         reportJsDocTypeSyntaxConflict(node);
       }
       irNode.setJSDocInfo(info);
@@ -2174,13 +2177,11 @@ class NewIRFactory {
       if (typeTree == null) {
         return;
       }
-      JSTypeExpression typeExpression = convertTypeTree(typeTree);
-      JSDocInfoBuilder jsdocBuilder = JSDocInfoBuilder.maybeCopyFrom(typeTarget.getJSDocInfo());
-      if (!jsdocBuilder.recordType(typeExpression)) {
+      if (typeTarget.getJSDocInfo() != null && typeTarget.getJSDocInfo().hasType()) {
         reportJsDocTypeSyntaxConflict(typeTree);
       }
-      JSDocInfo info = jsdocBuilder.build(typeTarget);
-      typeTarget.setJSDocInfo(info);
+      JSTypeExpression typeExpression = convertTypeTree(typeTree);
+      typeTarget.setJsTypeExpression(typeExpression);
     }
 
     private JSTypeExpression convertTypeTree(ParseTree typeTree) {
@@ -2188,7 +2189,7 @@ class NewIRFactory {
 
       // TODO(martinprobst): More types.
       IdentifierExpressionTree typeName = typeTree.asIdentifierExpression();
-      Node typeExpr = Node.newString(typeName.identifierToken.value);
+      Node typeExpr = Node.newString(Token.NAME, typeName.identifierToken.value);
       return new JSTypeExpression(typeExpr, sourceName);
     }
 
@@ -2220,9 +2221,9 @@ class NewIRFactory {
     }
 
     void maybeWarnTypeSyntax(ParseTree node) {
-      if (!config.acceptTypeSyntax) {
+      if (config.languageMode != LanguageMode.ECMASCRIPT6_TYPED) {
         errorReporter.warning(
-            "support for type syntax is not enabled",
+            "type syntax is only supported in ES6 typed mode",
             sourceName,
             lineno(node), charno(node));
       }
@@ -2371,7 +2372,8 @@ class NewIRFactory {
 
   boolean isEs6Mode() {
     return config.languageMode == LanguageMode.ECMASCRIPT6
-        || config.languageMode == LanguageMode.ECMASCRIPT6_STRICT;
+        || config.languageMode == LanguageMode.ECMASCRIPT6_STRICT
+        || config.languageMode == LanguageMode.ECMASCRIPT6_TYPED;
   }
 
   boolean isEs5OrBetterMode() {
@@ -2382,7 +2384,8 @@ class NewIRFactory {
     // TODO(johnlenz): in ECMASCRIPT5/6 is a "mixed" mode and we should track the context
     // that we are in, if we want to support it.
     return config.languageMode == LanguageMode.ECMASCRIPT5_STRICT
-        || config.languageMode == LanguageMode.ECMASCRIPT6_STRICT;
+        || config.languageMode == LanguageMode.ECMASCRIPT6_STRICT
+        || config.languageMode == LanguageMode.ECMASCRIPT6_TYPED;
   }
 
   double normalizeNumber(LiteralToken token) {
