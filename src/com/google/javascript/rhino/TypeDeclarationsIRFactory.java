@@ -1,14 +1,16 @@
 package com.google.javascript.rhino;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 
 import java.util.Iterator;
 
 /**
- * Created by alexeagle on 1/20/15.
+ * Produces ASTs which represent JavaScript type declarations, both those created from
+ * closure-style type declarations in a JSDoc node (via a conversion from the rhino AST
+ * produced in {@link com.google.javascript.jscomp.parsing.NewIRFactory}) as well as
+ * those created from TypeScript-style inline type declarations.
  */
-public class JSTypeTrees {
+public class TypeDeclarationsIRFactory {
 
   /**
    * The root of a JSTypeExpression is very different from an AST node, even
@@ -22,25 +24,30 @@ public class JSTypeTrees {
     int token = n.getType();
     switch (token) {
       case Token.STAR:
+        return new Node(Token.ANY_TYPE);
       case Token.VOID:
+        return new Node(Token.VOID_TYPE);
       case Token.EMPTY: // for function types that don't declare a return type
-        return new Node(token);
+        return new Node(Token.UNKNOWN_TYPE);
       case Token.BANG:
-        return new Node(Token.BANG, convertTypeNodeAST(n.getFirstChild()));
+        Node node = convertTypeNodeAST(n.getFirstChild());
+        node.putBooleanProp(Node.NULLABLE_TYPE, false);
+        return node;
       case Token.STRING:
         String typeName = n.getString();
         switch (typeName) {
           case "boolean":
             return new Node(Token.BOOLEAN_TYPE);
           case "null":
-            return new Node(Token.NULL);
+            return new Node(Token.NULL_TYPE);
           case "number":
             return new Node(Token.NUMBER_TYPE);
           case "string":
-            return new Node(Token.STRING);
+            return new Node(Token.STRING_TYPE);
           case "undefined":
+            return new Node(Token.UNKNOWN_TYPE);
           case "void":
-            return new Node(Token.VOID);
+            return new Node(Token.VOID_TYPE);
           default:
             Node root = parseQualifiedName(typeName);
             if (n.getChildCount() > 0 && n.getFirstChild().isBlock()) {
@@ -54,11 +61,11 @@ public class JSTypeTrees {
       case Token.QMARK:
         Node child = n.getFirstChild();
         if (child == null) {
-          return new Node(Token.QMARK);
+          return new Node(Token.UNKNOWN_TYPE);
         }
         return new Node(
             Token.UNION_TYPE,
-            new Node(Token.NULL),
+            new Node(Token.NULL_TYPE),
             convertTypeNodeAST(child));
       case Token.LC:
         return convertRecordTypeAST(n.getFirstChild());
@@ -80,9 +87,9 @@ public class JSTypeTrees {
               result.addChildToBack(stringKey);
             }
           } else if (child2.isThis()) {
-            Node stringKey = IR.stringKey("this");
-            stringKey.addChildToFront(convertTypeNodeAST(child2.getFirstChild()));
-            result.addChildToBack(stringKey);
+            result.putProp(Node.FUNCTION_THIS_TYPE, convertTypeNodeAST(child2.getFirstChild()));
+          } else if (child2.isNew()) {
+            result.putProp(Node.FUNCTION_NEW_TYPE, convertTypeNodeAST(child2.getFirstChild()));
           } else {
             result.addChildToFront(convertTypeNodeAST(child2));
           }
@@ -117,7 +124,7 @@ public class JSTypeTrees {
         fieldName = fieldName.substring(1, fieldName.length() - 1);
       }
       Node fieldType = isFieldTypeDeclared
-          ? convertTypeNodeAST(field.getLastChild()) : new Node(Token.QMARK);
+          ? convertTypeNodeAST(field.getLastChild()) : new Node(Token.UNKNOWN_TYPE);
       Node newField = IR.stringKey(fieldName);
       newField.addChildToBack(fieldType);
       objectLit.addChildToBack(newField);

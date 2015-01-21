@@ -1,6 +1,5 @@
 package com.google.javascript.rhino;
 
-import com.google.common.base.Preconditions;
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.javascript.jscomp.parsing.JsDocInfoParser;
@@ -8,20 +7,25 @@ import junit.framework.TestCase;
 
 import static com.google.common.truth.Truth.THROW_ASSERTION_ERROR;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.javascript.rhino.Token.*;
+import static com.google.javascript.rhino.Token.BOOLEAN_TYPE;
+import static com.google.javascript.rhino.Token.FUNCTION_TYPE;
+import static com.google.javascript.rhino.Token.NULL_TYPE;
+import static com.google.javascript.rhino.Token.NUMBER_TYPE;
 import static com.google.javascript.rhino.Token.PARAMETERIZED_TYPE;
-import static com.google.javascript.rhino.Token.STRING;
+import static com.google.javascript.rhino.Token.STRING_TYPE;
+import static com.google.javascript.rhino.Token.UNKNOWN_TYPE;
+import static com.google.javascript.rhino.Token.VOID_TYPE;
 
-public class JSTypeTreesTest extends TestCase {
+public class TypeDeclarationsIRFactoryTest extends TestCase {
 
   public void testSimpleTypes() {
-    assertParseTypeAndConvert("*").hasType(STAR);
-    assertParseTypeAndConvert("boolean").hasType(Token.BOOLEAN_TYPE);
-    assertParseTypeAndConvert("null").hasType(NULL);
+    assertParseTypeAndConvert("*").hasType(Token.ANY_TYPE);
+    assertParseTypeAndConvert("boolean").hasType(BOOLEAN_TYPE);
+    assertParseTypeAndConvert("null").hasType(NULL_TYPE);
     assertParseTypeAndConvert("number").hasType(NUMBER_TYPE);
-    assertParseTypeAndConvert("string").hasType(STRING);
-    assertParseTypeAndConvert("void").hasType(VOID);
-    assertParseTypeAndConvert("undefined").hasType(VOID);
+    assertParseTypeAndConvert("string").hasType(STRING_TYPE);
+    assertParseTypeAndConvert("void").hasType(VOID_TYPE);
+    assertParseTypeAndConvert("undefined").hasType(UNKNOWN_TYPE);
   }
 
   public void testNamedTypes() throws Exception {
@@ -33,10 +37,10 @@ public class JSTypeTreesTest extends TestCase {
 
   public void testTypeApplication() throws Exception {
     assertParseTypeAndConvert("Array.<string>")
-        .isEqualTo(new Node(PARAMETERIZED_TYPE, IR.name("Array"), new Node(STRING)));
+        .isEqualTo(new Node(PARAMETERIZED_TYPE, IR.name("Array"), new Node(STRING_TYPE)));
     assertParseTypeAndConvert("Object.<string, number>")
         .isEqualTo(new Node(PARAMETERIZED_TYPE, IR.name("Object"),
-            new Node(STRING), new Node(Token.NUMBER_TYPE)));
+            new Node(STRING_TYPE), new Node(Token.NUMBER_TYPE)));
   }
 
   public void testTypeUnion() throws Exception {
@@ -49,35 +53,37 @@ public class JSTypeTreesTest extends TestCase {
     Node key1 = IR.stringKey("myNum");
     key1.addChildToFront(new Node(NUMBER_TYPE));
     Node key2 = IR.stringKey("myObject");
-    key2.addChildToFront(new Node(QMARK));
+    key2.addChildToFront(new Node(UNKNOWN_TYPE));
     assertParseTypeAndConvert("{myNum: number, myObject}")
         .isEqualTo(IR.objectlit(key1, key2));
   }
 
   public void testRecordTypeWithTypeApplication() throws Exception {
     Node key = IR.stringKey("length");
-    key.addChildToFront(new Node(QMARK));
+    key.addChildToFront(new Node(UNKNOWN_TYPE));
     assertParseTypeAndConvert("Array.<{length}>")
         .isEqualTo(new Node(PARAMETERIZED_TYPE, IR.name("Array"), IR.objectlit(key)));
   }
 
   public void testNullableType() throws Exception {
     assertParseTypeAndConvert("?number")
-        .isEqualTo(new Node(Token.UNION_TYPE, new Node(Token.NULL), new Node(Token.NUMBER_TYPE)));
+        .isEqualTo(new Node(Token.UNION_TYPE, new Node(Token.NULL_TYPE), new Node(Token.NUMBER_TYPE)));
   }
 
   public void testNonNullableType() throws Exception {
     assertParseTypeAndConvert("!Object")
-        .isEqualTo(new Node(Token.BANG, IR.name("Object")));
+        .isEqualTo(IR.name("Object"));
+    assertParseTypeAndConvert("!Object")
+        .hasBooleanProperty(Node.NULLABLE_TYPE, false);
   }
 
   public void testFunctionType() throws Exception {
     Node stringKey = IR.stringKey("p1");
-    stringKey.addChildToFront(new Node(Token.STRING));
+    stringKey.addChildToFront(new Node(Token.STRING_TYPE));
     Node stringKey1 = IR.stringKey("p2");
     stringKey1.addChildToFront(new Node(Token.BOOLEAN_TYPE));
     assertParseTypeAndConvert("function(string, boolean)")
-        .isEqualTo(new Node(FUNCTION_TYPE, new Node(EMPTY), stringKey, stringKey1));
+        .isEqualTo(new Node(FUNCTION_TYPE, new Node(UNKNOWN_TYPE), stringKey, stringKey1));
   }
 
   public void testFunctionReturnType() throws Exception {
@@ -86,25 +92,27 @@ public class JSTypeTreesTest extends TestCase {
   }
 
   public void testFunctionThisType() throws Exception {
-    // FIXME: this is pretty sketchy!
-    Node stringKey = IR.stringKey("this");
-    stringKey.addChildToFront(IR.getprop(IR.getprop(IR.name("goog"), IR.string("ui")), IR.string("Menu")));
     Node stringKey1 = IR.stringKey("p1");
-    stringKey1.addChildToFront(new Node(Token.STRING));
+    stringKey1.addChildToFront(new Node(Token.STRING_TYPE));
+    Node expected = new Node(FUNCTION_TYPE, new Node(UNKNOWN_TYPE), stringKey1);
+    expected.putProp(Node.FUNCTION_THIS_TYPE, IR.getprop(IR.getprop(IR.name("goog"), IR.string("ui")), IR.string("Menu")));
     assertParseTypeAndConvert("function(this:goog.ui.Menu, string)")
-        .isEqualTo(new Node(FUNCTION_TYPE, new Node(EMPTY), stringKey, stringKey1));
+        .isEqualTo(expected);
   }
 
   public void testFunctionNewType() throws Exception {
-
+    Node stringKey1 = IR.stringKey("p1");
+    stringKey1.addChildToFront(new Node(Token.STRING_TYPE));
+    assertParseTypeAndConvert("function(new:goog.ui.Menu, string)")
+        .isEqualTo(new Node(FUNCTION_TYPE, new Node(UNKNOWN_TYPE), stringKey1));
   }
 
-  private NodeSubject assertParseTypeAndConvert(final String typeComment) {
-    Node oldAST = JsDocInfoParser.parseTypeString(typeComment);
+  private NodeSubject assertParseTypeAndConvert(final String typeExpr) {
+    Node oldAST = JsDocInfoParser.parseTypeString(typeExpr);
     if (oldAST == null) {
-      fail(typeComment + " did not produce a parsed AST");
+      fail(typeExpr + " did not produce a parsed AST");
     }
-    return new NodeSubject(THROW_ASSERTION_ERROR, JSTypeTrees.convertTypeNodeAST(oldAST));
+    return new NodeSubject(THROW_ASSERTION_ERROR, TypeDeclarationsIRFactory.convertTypeNodeAST(oldAST));
   }
 
   private class NodeSubject extends Subject<NodeSubject, Node> {
@@ -121,6 +129,10 @@ public class JSTypeTreesTest extends TestCase {
 
     public void hasType(int tokenType) {
       assertThat(getSubject().getType()).is(tokenType);
+    }
+
+    public void hasBooleanProperty(int property, boolean value) {
+      assertThat(getSubject().getBooleanProp(property)).isEqualTo(value);
     }
   }
 }

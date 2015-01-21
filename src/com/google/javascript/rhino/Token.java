@@ -191,6 +191,18 @@ public class Token {
         DEFAULT_VALUE   = 178, // Formal parameter or destructuring element
                                // with a default value
 
+        // Used by type declaration ASTs
+        STRING_TYPE        = 200,
+        BOOLEAN_TYPE       = 201,
+        NUMBER_TYPE        = 202,
+        FUNCTION_TYPE      = 203,
+        PARAMETERIZED_TYPE = 204,
+        UNION_TYPE         = 205,
+        ANY_TYPE           = 206,
+        UNKNOWN_TYPE       = 207,
+        NULL_TYPE          = 208,
+        VOID_TYPE          = 209,
+
         // JSDoc-only tokens
         ANNOTATION     = 300,
         PIPE           = 301,
@@ -203,12 +215,6 @@ public class Token {
         LB             = 308,  // left brackets
         LC             = 309,  // left curly braces
         COLON          = 310,
-        // Used by types in jsdocs
-        BOOLEAN_TYPE       = 311,
-        NUMBER_TYPE        = 312,
-        FUNCTION_TYPE      = 313,
-        PARAMETERIZED_TYPE = 314,
-        UNION_TYPE         = 315,
 
         // Token Types to use for internal bookkeeping,
         // an AST is invalid while these are present.
@@ -320,6 +326,11 @@ public class Token {
           case LB:              return "LB";
           case LC:              return "LC";
           case COLON:           return "COLON";
+          case STRING_TYPE:     return "STRING_TYPE";
+          case ANY_TYPE:        return "ANY_TYPE";
+          case UNKNOWN_TYPE:    return "UNKNOWN_TYPE";
+          case NULL_TYPE:       return "NULL_TYPE";
+          case VOID_TYPE:       return "VOID_TYPE";
           case BOOLEAN_TYPE:       return "BOOLEAN_TYPE";
           case NUMBER_TYPE:        return "NUMBER_TYPE";
           case PARAMETERIZED_TYPE: return "PARAMETERIZED_TYPE";

@@ -123,10 +123,16 @@ public class Node implements Cloneable, Serializable {
                                   // to avoid analyzing them during
                                   // NewTypeInference. We remove this attribute
                                   // in the fwd direction of NewTypeInference.
-      CONSTANT_PROPERTY_DEF = 76; // Used to communicate information between
+      CONSTANT_PROPERTY_DEF = 76, // Used to communicate information between
                                   // GlobalTypeInfo and NewTypeInference.
                                   // We use this to tag getprop nodes that
                                   // declare properties.
+      FUNCTION_THIS_TYPE = 78,    // Used to annotate a FUNCTION_TYPE node with the expected
+                                  // type of the value of `this` within the function.
+      FUNCTION_NEW_TYPE = 79,     // Used to annotate a FUNCTION_TYPE node with the expected
+                                  // type that will be returned when the `new` operator is used
+                                  // on the function.
+      NULLABLE_TYPE = 80;
 
 
   public static final int   // flags for INCRDECR_PROP
@@ -176,6 +182,9 @@ public class Node implements Cloneable, Serializable {
         case COMPUTED_PROP_SETTER: return "computed_prop_setter";
         case ANALYZED_DURING_GTI:  return "analyzed_during_gti";
         case CONSTANT_PROPERTY_DEF: return "constant_property_def";
+        case FUNCTION_THIS_TYPE: return "function_this_type";
+        case FUNCTION_NEW_TYPE: return "function_new_type";
+        case NULLABLE_TYPE : return "nullable_type";
         default:
           throw new IllegalStateException("unexpected prop id " + propType);
       }
