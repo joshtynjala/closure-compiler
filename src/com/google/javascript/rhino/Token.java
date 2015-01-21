@@ -203,6 +203,12 @@ public class Token {
         LB             = 308,  // left brackets
         LC             = 309,  // left curly braces
         COLON          = 310,
+        // Used by types in jsdocs
+        BOOLEAN_TYPE       = 311,
+        NUMBER_TYPE        = 312,
+        FUNCTION_TYPE      = 313,
+        PARAMETERIZED_TYPE = 314,
+        UNION_TYPE         = 315,
 
         // Token Types to use for internal bookkeeping,
         // an AST is invalid while these are present.
@@ -314,6 +320,11 @@ public class Token {
           case LB:              return "LB";
           case LC:              return "LC";
           case COLON:           return "COLON";
+          case BOOLEAN_TYPE:       return "BOOLEAN_TYPE";
+          case NUMBER_TYPE:        return "NUMBER_TYPE";
+          case PARAMETERIZED_TYPE: return "PARAMETERIZED_TYPE";
+          case UNION_TYPE:         return "UNION_TYPE";
+          case FUNCTION_TYPE:      return "FUNCTION_TYPE";
 
           case ARRAY_PATTERN:   return "ARRAY_PATTERN";
           case OBJECT_PATTERN:  return "OBJECT_PATTERN";
