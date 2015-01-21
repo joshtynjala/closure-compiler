@@ -7,12 +7,15 @@ import junit.framework.TestCase;
 
 import static com.google.common.truth.Truth.THROW_ASSERTION_ERROR;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.javascript.rhino.Node.NULLABLE_TYPE;
 import static com.google.javascript.rhino.Token.BOOLEAN_TYPE;
 import static com.google.javascript.rhino.Token.FUNCTION_TYPE;
 import static com.google.javascript.rhino.Token.NULL_TYPE;
 import static com.google.javascript.rhino.Token.NUMBER_TYPE;
 import static com.google.javascript.rhino.Token.PARAMETERIZED_TYPE;
+import static com.google.javascript.rhino.Token.REST_PARAMETER_TYPE;
 import static com.google.javascript.rhino.Token.STRING_TYPE;
+import static com.google.javascript.rhino.Token.UNION_TYPE;
 import static com.google.javascript.rhino.Token.UNKNOWN_TYPE;
 import static com.google.javascript.rhino.Token.VOID_TYPE;
 
@@ -40,13 +43,13 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
         .isEqualTo(new Node(PARAMETERIZED_TYPE, IR.name("Array"), new Node(STRING_TYPE)));
     assertParseTypeAndConvert("Object.<string, number>")
         .isEqualTo(new Node(PARAMETERIZED_TYPE, IR.name("Object"),
-            new Node(STRING_TYPE), new Node(Token.NUMBER_TYPE)));
+            new Node(STRING_TYPE), new Node(NUMBER_TYPE)));
   }
 
   public void testTypeUnion() throws Exception {
     assertParseTypeAndConvert("(number|boolean)")
-        .isEqualTo(new Node(Token.UNION_TYPE,
-            new Node(Token.NUMBER_TYPE), new Node(Token.BOOLEAN_TYPE)));
+        .isEqualTo(new Node(UNION_TYPE,
+            new Node(NUMBER_TYPE), new Node(BOOLEAN_TYPE)));
   }
 
   public void testRecordType() throws Exception {
@@ -67,21 +70,21 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
 
   public void testNullableType() throws Exception {
     assertParseTypeAndConvert("?number")
-        .isEqualTo(new Node(Token.UNION_TYPE, new Node(Token.NULL_TYPE), new Node(Token.NUMBER_TYPE)));
+        .isEqualTo(new Node(UNION_TYPE, new Node(NULL_TYPE), new Node(NUMBER_TYPE)));
   }
 
   public void testNonNullableType() throws Exception {
     assertParseTypeAndConvert("!Object")
         .isEqualTo(IR.name("Object"));
     assertParseTypeAndConvert("!Object")
-        .hasBooleanProperty(Node.NULLABLE_TYPE, false);
+        .hasBooleanProperty(NULLABLE_TYPE, false);
   }
 
   public void testFunctionType() throws Exception {
     Node stringKey = IR.stringKey("p1");
-    stringKey.addChildToFront(new Node(Token.STRING_TYPE));
+    stringKey.addChildToFront(new Node(STRING_TYPE));
     Node stringKey1 = IR.stringKey("p2");
-    stringKey1.addChildToFront(new Node(Token.BOOLEAN_TYPE));
+    stringKey1.addChildToFront(new Node(BOOLEAN_TYPE));
     assertParseTypeAndConvert("function(string, boolean)")
         .isEqualTo(new Node(FUNCTION_TYPE, new Node(UNKNOWN_TYPE), stringKey, stringKey1));
   }
@@ -93,7 +96,7 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
 
   public void testFunctionThisType() throws Exception {
     Node stringKey1 = IR.stringKey("p1");
-    stringKey1.addChildToFront(new Node(Token.STRING_TYPE));
+    stringKey1.addChildToFront(new Node(STRING_TYPE));
     Node expected = new Node(FUNCTION_TYPE, new Node(UNKNOWN_TYPE), stringKey1);
     expected.putProp(Node.FUNCTION_THIS_TYPE, IR.getprop(IR.getprop(IR.name("goog"), IR.string("ui")), IR.string("Menu")));
     assertParseTypeAndConvert("function(this:goog.ui.Menu, string)")
@@ -102,9 +105,18 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
 
   public void testFunctionNewType() throws Exception {
     Node stringKey1 = IR.stringKey("p1");
-    stringKey1.addChildToFront(new Node(Token.STRING_TYPE));
+    stringKey1.addChildToFront(new Node(STRING_TYPE));
     assertParseTypeAndConvert("function(new:goog.ui.Menu, string)")
         .isEqualTo(new Node(FUNCTION_TYPE, new Node(UNKNOWN_TYPE), stringKey1));
+  }
+
+  public void testVariableParameters() throws Exception {
+    Node stringKey1 = IR.stringKey("p1");
+    stringKey1.addChildToFront(new Node(STRING_TYPE));
+    Node stringKey2 = IR.stringKey("p2");
+    stringKey2.addChildToFront(new Node(REST_PARAMETER_TYPE, new Node(NUMBER_TYPE)));
+    assertParseTypeAndConvert("function(string, ...number): number")
+        .isEqualTo(new Node(FUNCTION_TYPE, new Node(NUMBER_TYPE), stringKey1, stringKey2));
   }
 
   private NodeSubject assertParseTypeAndConvert(final String typeExpr) {

@@ -15,8 +15,8 @@ public class TypeDeclarationsIRFactory {
   /**
    * The root of a JSTypeExpression is very different from an AST node, even
    * though we use the same Java class to represent them.
-   * This function converts root nodes of JSTypeExpressions, to make them more
-   * similar to ordinary AST nodes.
+   * This function converts root nodes of JSTypeExpressions into TypeDeclaration ASTs,
+   * to make them more similar to ordinary AST nodes.
    */
   // TODO(dimvar): Eventually, we want to just parse types to the new
   // representation directly, and delete this function.
@@ -76,6 +76,10 @@ public class TypeDeclarationsIRFactory {
           unionNode.addChildToBack(convertTypeNodeAST(child2));
         }
         return unionNode;
+      case Token.ELLIPSIS:
+        Node restParams = new Node(Token.REST_PARAMETER_TYPE);
+        restParams.addChildToBack(convertTypeNodeAST(n.getFirstChild()));
+        return restParams;
       case Token.FUNCTION:
         Node result = new Node(Token.FUNCTION_TYPE);
         for (Node child2 : n.children()) {
@@ -90,6 +94,7 @@ public class TypeDeclarationsIRFactory {
             result.putProp(Node.FUNCTION_THIS_TYPE, convertTypeNodeAST(child2.getFirstChild()));
           } else if (child2.isNew()) {
             result.putProp(Node.FUNCTION_NEW_TYPE, convertTypeNodeAST(child2.getFirstChild()));
+          } else if (child2.getType() == Token.ELLIPSIS) {
           } else {
             result.addChildToFront(convertTypeNodeAST(child2));
           }

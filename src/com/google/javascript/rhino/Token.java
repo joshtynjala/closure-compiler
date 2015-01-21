@@ -202,6 +202,7 @@ public class Token {
         UNKNOWN_TYPE       = 207,
         NULL_TYPE          = 208,
         VOID_TYPE          = 209,
+        REST_PARAMETER_TYPE = 210,
 
         // JSDoc-only tokens
         ANNOTATION     = 300,
@@ -336,6 +337,7 @@ public class Token {
           case PARAMETERIZED_TYPE: return "PARAMETERIZED_TYPE";
           case UNION_TYPE:         return "UNION_TYPE";
           case FUNCTION_TYPE:      return "FUNCTION_TYPE";
+          case REST_PARAMETER_TYPE:return "REST_PARAMETER_TYPE";
 
           case ARRAY_PATTERN:   return "ARRAY_PATTERN";
           case OBJECT_PATTERN:  return "OBJECT_PATTERN";
