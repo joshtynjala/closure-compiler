@@ -169,7 +169,7 @@ public class TypeDeclarationsIRFactory {
    * @return
    */
   public static TypeDeclarationNode parameterizedType(
-      Node baseType, Iterable<TypeDeclarationNode> typeParameters) {
+      TypeDeclarationNode baseType, Iterable<TypeDeclarationNode> typeParameters) {
     TypeDeclarationNode node = new TypeDeclarationNode(Token.PARAMETERIZED_TYPE, baseType);
     for (Node typeParameter : typeParameters) {
       node.addChildToBack(typeParameter);
