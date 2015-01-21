@@ -485,7 +485,7 @@ class NewIRFactory {
         case Token.CONST:
         case Token.GETTER_DEF:
         case Token.SETTER_DEF:
-        case Token.MEMBER_DEF:
+        case Token.MEMBER_FUNCTION_DEF:
         case Token.STRING_KEY:
           return;
         case Token.GETELEM:
@@ -1347,7 +1347,7 @@ class NewIRFactory {
 
       if (functionTree.kind == FunctionDeclarationTree.Kind.MEMBER) {
         setSourceInfo(node, functionTree);
-        Node member = newStringNode(Token.MEMBER_DEF, name.value);
+        Node member = newStringNode(Token.MEMBER_FUNCTION_DEF, name.value);
         member.addChildToBack(node);
         member.setStaticMember(functionTree.isStatic);
         result = member;

@@ -463,7 +463,7 @@ public class AstValidator implements CompilerPass {
   }
 
   private void validateClassMember(Node n) {
-    if (n.getType() == Token.MEMBER_DEF
+    if (n.getType() == Token.MEMBER_FUNCTION_DEF
         || n.getType() == Token.GETTER_DEF
         || n.getType() == Token.SETTER_DEF) {
       validateChildCount(n, Token.arity(n.getType()));
@@ -1037,7 +1037,7 @@ public class AstValidator implements CompilerPass {
       case Token.STRING_KEY:
         validateObjectLitStringKey(n);
         return;
-      case Token.MEMBER_DEF:
+      case Token.MEMBER_FUNCTION_DEF:
         validateClassMember(n);
         if (n.isStaticMember()) {
           violation("Keys in an object literal should not be static.", n);

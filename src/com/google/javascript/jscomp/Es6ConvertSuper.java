@@ -59,7 +59,7 @@ public class Es6ConvertSuper implements NodeTraversal.Callback, HotSwapCompilerP
               "getters or setters in class definitions"));
           return false;
         }
-        if (member.isMemberDef() && member.getString().equals("constructor")) {
+        if (member.isMemberFunctionDef() && member.getString().equals("constructor")) {
           hasConstructor = true;
         }
       }
