@@ -336,6 +336,7 @@ public class Token {
           case PARAMETERIZED_TYPE: return "PARAMETERIZED_TYPE";
           case UNION_TYPE:         return "UNION_TYPE";
           case FUNCTION_TYPE:      return "FUNCTION_TYPE";
+          case UNDEFINED_TYPE:     return "UNDEFINED_TYPE";
 
           case ARRAY_PATTERN:   return "ARRAY_PATTERN";
           case OBJECT_PATTERN:  return "OBJECT_PATTERN";
