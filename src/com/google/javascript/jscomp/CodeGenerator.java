@@ -1036,7 +1036,8 @@ class CodeGenerator {
   }
 
   private void maybeAddTypeDecl(Node n) {
-    if (preserveTypeAnnotations && n.getJSTypeExpression() != null) {
+    if (languageMode == LanguageMode.ECMASCRIPT6_TYPED
+        && n.getJSTypeExpression() != null) {
       add(": ");
       add(n.getJSTypeExpression().getRoot());
     }
