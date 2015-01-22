@@ -115,15 +115,15 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
   }
 
   public void testFunctionReturn_typeInJsdocOnly() throws Exception {
-    parse("function/** string */foo() {\n  return'hello';\n}",
-        "function /** string */ foo() { return 'hello'; }");
+    parse("function /** string */ foo() { return 'hello'; }",
+        "function/** string */foo() {\n  return'hello';\n}");
   }
 
   private Node parse(String source) {
     return parse(source, source);
   }
 
-  private Node parse(String expected, String source) {
+  private Node parse(String source, String expected) {
     CompilerOptions options = new CompilerOptions();
     options.setLanguageIn(LanguageMode.ECMASCRIPT6_TYPED);
     options.setLanguageOut(LanguageMode.ECMASCRIPT6_TYPED);
