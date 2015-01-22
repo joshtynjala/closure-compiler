@@ -96,7 +96,7 @@ public class TypeDeclarationsIRFactory {
    *
    * <p>Example:
    * <pre>
-   * OBJECTLIT
+   * RECORD_TYPE
    *   STRING_KEY myNum
    *     NUMBER_TYPE
    *   STRING_KEY myObject
@@ -107,7 +107,7 @@ public class TypeDeclarationsIRFactory {
    */
   public static TypeDeclarationNode recordType(
       LinkedHashMap<String, TypeDeclarationNode> properties) {
-    TypeDeclarationNode node = new TypeDeclarationNode(Token.OBJECTLIT);
+    TypeDeclarationNode node = new TypeDeclarationNode(Token.RECORD_TYPE);
     for (Map.Entry<String, TypeDeclarationNode> property : properties.entrySet()) {
       Node stringKey = IR.stringKey(property.getKey());
       stringKey.addChildToFront(property.getValue());
@@ -252,17 +252,15 @@ public class TypeDeclarationsIRFactory {
     int token = n.getType();
     switch (token) {
       case Token.STAR:
-        return anyType();
+        return unionType(
+            namedType("Object"), numberType(), stringType(), booleanType(), nullType(), voidType());
       case Token.VOID:
         return voidType();
       case Token.EMPTY: // for function types that don't declare a return type
         return anyType();
       case Token.BANG:
-        TypeDeclarationNode node = convertTypeNodeAST(n.getFirstChild());
-
-        // FIXME: should nullability be in the type AST? probably
-        node.putBooleanProp(Node.NULLABLE_TYPE, false);
-        return node;
+        // TODO(alexeagle): capture nullability constraints once we know how to express them
+        return convertTypeNodeAST(n.getFirstChild());
       case Token.STRING:
         String typeName = n.getString();
         switch (typeName) {
@@ -315,10 +313,12 @@ public class TypeDeclarationsIRFactory {
             for (Node param : child2.children()) {
               parameters.put("p" + paramIdx++, convertTypeNodeAST(param));
             }
-          } else if (child2.isThis() || child2.isNew()) {
-            // These aren't expressable in TypeScript syntax, so we omit them from the tree.
+          } else if (child2.isNew()) {
+            // TODO(alexeagle): keep the constructor signatures on the tree, and emit them following
+            // the syntax in TypeScript 1.4 spec, section 3.7.8 Constructor Type Literals
+          } else if (child2.isThis()) {
+            // Not expressable in TypeScript syntax, so we omit them from the tree.
             // They could be added as properties on the result node.
-          } else if (child2.getType() == Token.ELLIPSIS) {
           } else {
             returnType = convertTypeNodeAST(child2);
           }

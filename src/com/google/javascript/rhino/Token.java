@@ -205,6 +205,7 @@ public class Token {
         REST_PARAMETER_TYPE = 210,
         NAMED_TYPE         = 211,
         OPTIONAL_PARAMETER = 212,
+        RECORD_TYPE        = 213,
 
         // JSDoc-only tokens
         ANNOTATION     = 300,
@@ -342,7 +343,7 @@ public class Token {
           case REST_PARAMETER_TYPE:return "REST_PARAMETER_TYPE";
           case NAMED_TYPE:         return "NAMED_TYPE";
           case OPTIONAL_PARAMETER: return "OPTIONAL_PARAMETER";
-
+          case RECORD_TYPE:        return "RECORD_TYPE";
           case ARRAY_PATTERN:   return "ARRAY_PATTERN";
           case OBJECT_PATTERN:  return "OBJECT_PATTERN";
           case CLASS:           return "CLASS";

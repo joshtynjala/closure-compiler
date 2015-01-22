@@ -10,7 +10,6 @@ import java.util.LinkedHashMap;
 
 import static com.google.common.truth.Truth.THROW_ASSERTION_ERROR;
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.javascript.rhino.Node.NULLABLE_TYPE;
 import static com.google.javascript.rhino.Node.TypeDeclarationNode;
 import static com.google.javascript.rhino.Token.ANY_TYPE;
 import static com.google.javascript.rhino.Token.BOOLEAN_TYPE;
@@ -20,25 +19,26 @@ import static com.google.javascript.rhino.Token.NULL_TYPE;
 import static com.google.javascript.rhino.Token.NUMBER_TYPE;
 import static com.google.javascript.rhino.Token.OBJECTLIT;
 import static com.google.javascript.rhino.Token.PARAMETERIZED_TYPE;
+import static com.google.javascript.rhino.Token.RECORD_TYPE;
 import static com.google.javascript.rhino.Token.REST_PARAMETER_TYPE;
 import static com.google.javascript.rhino.Token.STRING_TYPE;
-import static com.google.javascript.rhino.Token.UNKNOWN_TYPE;
 import static com.google.javascript.rhino.Token.VOID_TYPE;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.anyType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.booleanType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.namedType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.nullType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.numberType;
+import static com.google.javascript.rhino.TypeDeclarationsIRFactory.optionalParameter;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.parameterizedType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.recordType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.stringType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.unionType;
+import static com.google.javascript.rhino.TypeDeclarationsIRFactory.voidType;
 import static java.util.Arrays.asList;
 
 public class TypeDeclarationsIRFactoryTest extends TestCase {
 
   public void testConvertSimpleTypes() {
-    assertParseTypeAndConvert("*").hasType(ANY_TYPE);
     assertParseTypeAndConvert("?").hasType(ANY_TYPE);
     assertParseTypeAndConvert("boolean").hasType(BOOLEAN_TYPE);
     assertParseTypeAndConvert("null").hasType(NULL_TYPE);
@@ -46,6 +46,11 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     assertParseTypeAndConvert("string").hasType(STRING_TYPE);
     assertParseTypeAndConvert("void").hasType(VOID_TYPE);
     assertParseTypeAndConvert("undefined").hasType(VOID_TYPE);
+  }
+
+  public void testConvertStarType() throws Exception {
+    assertParseTypeAndConvert("*").isEqualTo(unionType(
+        namedType("Object"), numberType(), stringType(), booleanType(), nullType(), voidType()));
   }
 
   public void testConvertNamedTypes() throws Exception {
@@ -97,7 +102,7 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     key2.addChildToFront(new TypeDeclarationNode(ANY_TYPE));
 
     assertNode(node)
-        .isEqualTo(new TypeDeclarationNode(OBJECTLIT, key1, key2));
+        .isEqualTo(new TypeDeclarationNode(RECORD_TYPE, key1, key2));
   }
 
   public void testConvertRecordTypeWithTypeApplication() throws Exception {
@@ -106,7 +111,7 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     assertParseTypeAndConvert("Array.<{length}>")
         .isEqualTo(new TypeDeclarationNode(PARAMETERIZED_TYPE,
             namedType("Array"),
-            new TypeDeclarationNode(OBJECTLIT, key)));
+            new TypeDeclarationNode(RECORD_TYPE, key)));
   }
 
   public void testConvertNullableType() throws Exception {
@@ -114,10 +119,10 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
         .isEqualTo(unionType(nullType(), numberType()));
   }
 
+  // TODO(alexeagle): change this test once we can capture nullability constraints in TypeScript
   public void testConvertNonNullableType() throws Exception {
     assertParseTypeAndConvert("!Object")
-        .isEqualTo(namedType("Object")).and()
-        .hasBooleanProperty(NULLABLE_TYPE, false);
+        .isEqualTo(namedType("Object"));
   }
 
   public void testConvertFunctionType() throws Exception {
@@ -159,8 +164,8 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
 
   public void testConvertOptionalFunctionParameters() throws Exception {
     LinkedHashMap<String, TypeDeclarationNode> parameters = new LinkedHashMap<>();
-    parameters.put("p1", unionType(nullType(), stringType()));
-    parameters.put("p2", numberType());
+    parameters.put("p1", optionalParameter(unionType(nullType(), stringType())));
+    parameters.put("p2", optionalParameter(numberType()));
     assertParseTypeAndConvert("function(?string=, number=)")
         .isEqualTo(TypeDeclarationsIRFactory.functionType(anyType(), parameters));
   }
