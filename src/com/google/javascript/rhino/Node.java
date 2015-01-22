@@ -210,8 +210,8 @@ public class Node implements Cloneable, Serializable {
 
     @Override
     boolean isEquivalentTo(
-        Node node, boolean compareJsType, boolean recur, boolean jsDoc) {
-      boolean equiv = super.isEquivalentTo(node, compareJsType, recur, jsDoc);
+        Node node, boolean compareType, boolean recur, boolean jsDoc) {
+      boolean equiv = super.isEquivalentTo(node, compareType, recur, jsDoc);
       if (equiv) {
         double thisValue = getDouble();
         double thatValue = ((NumberNode) node).getDouble();
@@ -269,8 +269,8 @@ public class Node implements Cloneable, Serializable {
 
     @Override
     boolean isEquivalentTo(
-        Node node, boolean compareJsType, boolean recur, boolean jsDoc) {
-      return (super.isEquivalentTo(node, compareJsType, recur, jsDoc)
+        Node node, boolean compareType, boolean recur, boolean jsDoc) {
+      return (super.isEquivalentTo(node, compareType, recur, jsDoc)
           && this.str.equals(((StringNode) node).str));
     }
 
@@ -1051,11 +1051,11 @@ public class Node implements Cloneable, Serializable {
     }
 
     if (printType) {
-      if (jsType != null) {
-        String jsTypeString = jsType.toString();
-        if (jsTypeString != null) {
+      if (typei != null) {
+        String typeString = typei.toString();
+        if (typeString != null) {
           sb.append(" : ");
-          sb.append(jsTypeString);
+          sb.append(typeString);
         }
       }
     }
@@ -1139,7 +1139,7 @@ public class Node implements Cloneable, Serializable {
    */
   private int sourcePosition;
 
-  private JSType jsType;
+  private TypeI typei;
 
   private Node parent;
 
@@ -1589,21 +1589,21 @@ public class Node implements Cloneable, Serializable {
   }
 
   /**
-   * @param compareJsType Whether to compare the JSTypes of the nodes.
+   * @param compareType Whether to compare the JSTypes of the nodes.
    * @param recurse Whether to compare the children of the current node, if
    *    not only the the count of the children are compared.
    * @param jsDoc Whether to check that the JsDoc of the nodes are equivalent.
    * @return Whether this node is equivalent semantically to the provided node.
    */
   boolean isEquivalentTo(
-      Node node, boolean compareJsType, boolean recurse, boolean jsDoc) {
+      Node node, boolean compareType, boolean recurse, boolean jsDoc) {
     if (type != node.getType()
         || getChildCount() != node.getChildCount()
         || this.getClass() != node.getClass()) {
       return false;
     }
 
-    if (compareJsType && !JSType.isEquivalent(jsType, node.getJSType())) {
+    if (compareType && !JSType.isEquivalent((JSType) typei, node.getJSType())) {
       return false;
     }
 
@@ -1646,7 +1646,7 @@ public class Node implements Cloneable, Serializable {
       for (n = first, n2 = node.first;
            n != null;
            n = n.next, n2 = n2.next) {
-        if (!n.isEquivalentTo(n2, compareJsType, recurse, jsDoc)) {
+        if (!n.isEquivalentTo(n2, compareType, recurse, jsDoc)) {
           return false;
         }
       }
@@ -2008,11 +2008,19 @@ public class Node implements Cloneable, Serializable {
    * specified type.
    */
   public JSType getJSType() {
-      return jsType;
+    return (JSType) typei;
   }
 
   public void setJSType(JSType jsType) {
-      this.jsType = jsType;
+      this.typei = jsType;
+  }
+
+  public TypeI getTypeI() {
+    return typei;
+  }
+
+  public void setTypeI(TypeI type) {
+    this.typei = type;
   }
 
   public FileLevelJsDocBuilder getJsDocBuilderForNode() {
