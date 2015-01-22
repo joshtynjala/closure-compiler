@@ -229,6 +229,8 @@ class NewIRFactory {
   private Comment currentComment;
 
   private boolean currentFileIsExterns = false;
+  private boolean hasTypeSyntax = false;
+  private boolean hasTypeAnnotations = false;
 
   private NewIRFactory(String sourceString,
                     StaticSourceFile sourceFile,
@@ -461,13 +463,25 @@ class NewIRFactory {
     validateFunctionJsDoc(n);
   }
 
-  private JSDocInfo checkTypeSyntaxDocConflict(SourceRange location, JSDocInfo info) {
-    if (info.hasTypeInformation() && hasTypeSyntax) {
+  private JSDocInfo recordJsDoc(SourceRange location, JSDocInfo info) {
+    if (info != null && info.hasTypeInformation()) {
+      hasTypeAnnotations = true;
+      if (hasTypeSyntax) {
+        errorReporter.error("Bad type syntax"
+            + " - can only have JSDoc or inline type annotations, not both",
+            sourceName, lineno(location.start), charno(location.start));
+      }
+    }
+    return info;
+  }
+
+  private void recordTypeSyntax(SourceRange location) {
+    hasTypeSyntax = true;
+    if (hasTypeAnnotations) {
       errorReporter.error("Bad type syntax"
           + " - can only have JSDoc or inline type annotations, not both",
           sourceName, lineno(location.start), charno(location.start));
     }
-    return info;
   }
 
   /**
@@ -697,7 +711,7 @@ class NewIRFactory {
       JsDocInfoParser jsDocParser = createJsDocInfoParser(comment);
       parsedComments.add(comment);
       if (!handlePossibleFileOverviewJsDoc(jsDocParser)) {
-        return checkTypeSyntaxDocConflict(comment.location,
+        return recordJsDoc(comment.location,
             jsDocParser.retrieveAndResetParsedJSDocInfo());
       }
     }
@@ -836,7 +850,7 @@ class NewIRFactory {
       boolean optional) {
     Comment comment = getJsDoc(location);
     if (comment != null && (!optional || !comment.value.contains("@"))) {
-      return parseInlineTypeDoc(comment);
+      return recordJsDoc(location, parseInlineTypeDoc(comment));
     } else {
       return handleJsDoc(comment);
     }
@@ -997,7 +1011,6 @@ class NewIRFactory {
   }
 
   private class TransformDispatcher extends NewTypeSafeDispatcher<Node> {
-    private boolean hasTypeSyntax;
 
     /**
      * Transforms the given node and then sets its type to Token.STRING if it
@@ -1325,9 +1338,7 @@ class NewIRFactory {
       node.addChildToBack(transform(functionTree.formalParameterList));
 
       if (functionTree.returnType != null) {
-        if (node.getJSDocInfo() != null && node.getJSDocInfo().hasReturnType()) {
-          reportJsDocTypeSyntaxConflict(functionTree.returnType);
-        }
+        recordJsDoc(functionTree.returnType.location, node.getJSDocInfo());
         JSTypeExpression returnType = convertTypeTree(functionTree.returnType);
         node.setJsTypeExpression(returnType);
       }
@@ -2177,9 +2188,7 @@ class NewIRFactory {
       if (typeTree == null) {
         return;
       }
-      if (typeTarget.getJSDocInfo() != null && typeTarget.getJSDocInfo().hasType()) {
-        reportJsDocTypeSyntaxConflict(typeTree);
-      }
+      recordJsDoc(typeTree.location, typeTarget.getJSDocInfo());
       JSTypeExpression typeExpression = convertTypeTree(typeTree);
       typeTarget.setJsTypeExpression(typeExpression);
     }
@@ -2227,7 +2236,7 @@ class NewIRFactory {
             sourceName,
             lineno(node), charno(node));
       }
-      hasTypeSyntax = true;
+      recordTypeSyntax(node.location);
     }
 
     @Override
