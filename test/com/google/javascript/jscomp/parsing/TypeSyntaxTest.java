@@ -16,121 +16,145 @@
 
 package com.google.javascript.jscomp.parsing;
 
-import com.google.javascript.jscomp.parsing.Config.LanguageMode;
-import com.google.javascript.rhino.JSDocInfo;
+import com.google.javascript.jscomp.CodePrinter;
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
+import com.google.javascript.jscomp.SourceFile;
+import com.google.javascript.jscomp.testing.TestErrorManager;
 import com.google.javascript.rhino.JSTypeExpression;
 import com.google.javascript.rhino.Node;
-import com.google.javascript.rhino.jstype.JSType;
-import com.google.javascript.rhino.jstype.SimpleSourceFile;
-import com.google.javascript.rhino.jstype.StaticSourceFile;
+import com.google.javascript.rhino.Token;
 import com.google.javascript.rhino.testing.BaseJSTypeTestCase;
-import com.google.javascript.rhino.testing.TestErrorReporter;
 
 public class TypeSyntaxTest extends BaseJSTypeTestCase {
 
-  private TestErrorReporter testErrorReporter;
+  private TestErrorManager testErrorManager;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    testErrorReporter = new TestErrorReporter(null, null);
+    testErrorManager = new TestErrorManager();
   }
 
   private void expectErrors(String... errors) {
-    testErrorReporter.setErrors(errors);
+    testErrorManager.expectErrors(errors);
   }
 
   private void expectWarnings(String... warnings) {
-    testErrorReporter.setWarnings(warnings);
+    testErrorManager.expectWarnings(warnings);
   }
 
   public void testVariableDeclaration() {
     Node varDecl = parse("var foo: string = 'hello';").getFirstChild();
-    assertTypeEquals(STRING_TYPE, varDecl.getFirstChild().getJSDocInfo().getType());
+    assertTypeEquals(STRING_TYPE, varDecl.getFirstChild().getJSTypeExpression());
   }
 
   public void testVariableDeclaration_errorIncomplete() {
-    expectErrors("Unexpected end of type expression");
+    expectErrors("Parse error. Unexpected end of type expression");
     parse("var foo: = 'hello';");
   }
 
   public void testTypeInDocAndSyntax() {
-    expectErrors("Bad type annotation - can only have JSDoc or inline type annotations, not both");
-    Node varDecl = parse("var /** string */ foo: string = 'hello';").getFirstChild();
-    assertTypeEquals(STRING_TYPE, varDecl.getFirstChild().getJSDocInfo().getType());
+    expectErrors("Parse error. Bad type syntax - "
+        + "can only have JSDoc or inline type annotations, not both");
+    parse("var /** string */ foo: string = 'hello';");
   }
 
   public void testFunctionParamDeclaration() {
-    Node fn = parse("function foo(x: string) {}").getFirstChild();
-    JSDocInfo paramInfo = fn.getFirstChild().getNext().getFirstChild().getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, paramInfo.getType());
+    Node fn = parse("function foo(x: string) {\n}").getFirstChild();
+    JSTypeExpression paramType = fn.getFirstChild().getNext().getFirstChild().getJSTypeExpression();
+    assertTypeEquals(STRING_TYPE, paramType);
   }
 
   public void testFunctionParamDeclaration_defaultValue() {
-    Node fn = parse("function foo(x: string = 'hello') {}").getFirstChild();
-    JSDocInfo paramInfo = fn.getFirstChild().getNext().getFirstChild().getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, paramInfo.getType());
+    Node fn = parse("function foo(x: string = 'hello') {\n}").getFirstChild();
+    JSTypeExpression paramType = fn.getFirstChild().getNext().getFirstChild().getJSTypeExpression();
+    assertTypeEquals(STRING_TYPE, paramType);
   }
 
   public void testFunctionParamDeclaration_destructuringArray() {
     // TODO(martinprobst): implement.
-    expectErrors("',' expected");
+    expectErrors("Parse error. ',' expected");
     parse("function foo([x]: string) {}");
   }
 
   public void testFunctionParamDeclaration_destructuringArrayInner() {
     // TODO(martinprobst): implement.
-    expectErrors("']' expected");
+    expectErrors("Parse error. ']' expected");
     parse("function foo([x: string]) {}");
   }
 
   public void testFunctionParamDeclaration_destructuringObject() {
     // TODO(martinprobst): implement.
-    expectErrors("',' expected");
+    expectErrors("Parse error. ',' expected");
     parse("function foo({x}: string) {}");
   }
 
   public void testFunctionParamDeclaration_arrow() {
     Node fn = parse("(x: string) => 'hello' + x;").getFirstChild().getFirstChild();
-    JSDocInfo paramInfo = fn.getFirstChild().getNext().getFirstChild().getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, paramInfo.getType());
+    JSTypeExpression paramType = fn.getFirstChild().getNext().getFirstChild().getJSTypeExpression();
+    assertTypeEquals(STRING_TYPE, paramType);
   }
 
   public void testFunctionReturn() {
-    Node fn = parse("function foo(): string { return 'hello'; }").getFirstChild();
-    JSDocInfo fnDocInfo = fn.getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, fnDocInfo.getReturnType());
+    Node fn = parse("function foo(): string {\n  return'hello';\n}").getFirstChild();
+    JSTypeExpression returnType = fn.getJSTypeExpression();
+    assertTypeEquals(STRING_TYPE, returnType);
   }
 
   public void testFunctionReturn_arrow() {
     Node fn = parse("(): string => 'hello';").getFirstChild().getFirstChild();
-    JSDocInfo fnDocInfo = fn.getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, fnDocInfo.getReturnType());
+    JSTypeExpression returnType = fn.getJSTypeExpression();
+    assertTypeEquals(STRING_TYPE, returnType);
+  }
+
+  public void testFunctionReturn_typeInDocAndSyntax() throws Exception {
+    expectErrors("Parse error. Bad type syntax - "
+        + "can only have JSDoc or inline type annotations, not both");
+    parse("function /** string */ foo(): string { return 'hello'; }");
   }
 
   public void testCompositeType() {
     Node varDecl = parse("var foo: mymod.ns.Type;").getFirstChild();
-    JSTypeExpression type = varDecl.getFirstChild().getJSDocInfo().getType();
-    JSType namedType =
-        registry.createNullableType(registry.createNamedType("mymod.ns.Type", null, -1, -1));
-    assertTypeEquals(namedType, type);
+    JSTypeExpression type = varDecl.getFirstChild().getJSTypeExpression();
+    assertEquals(Token.NAME, type.getRoot().getType());
+    assertEquals("mymod.ns.Type", type.getRoot().getString());
   }
 
   public void testCompositeType_trailingDot() {
-    expectErrors("'identifier' expected");
+    expectErrors("Parse error. 'identifier' expected");
     parse("var foo: mymod.Type.;");
   }
 
-  private Node parse(String string) {
-    StaticSourceFile file = new SimpleSourceFile("input", false);
-    Node script = ParserRunner.parse(file,
-        string,
-        ParserRunner.createConfig(false, LanguageMode.ECMASCRIPT6_STRICT, false, true, null),
-        testErrorReporter).ast;
+  private Node parse(String source) {
+    CompilerOptions options = new CompilerOptions();
+    options.setLanguageIn(LanguageMode.ECMASCRIPT6_TYPED);
+    options.setLanguageOut(LanguageMode.ECMASCRIPT6_TYPED);
+    options.setPreserveTypeAnnotations(true);
+    options.setPrettyPrint(true);
+    options.setLineLengthThreshold(80);
+    options.setPreferSingleQuotes(true);
 
-    // verifying that all warnings were seen
-    assertTrue(testErrorReporter.hasEncounteredAllErrors());
-    assertTrue(testErrorReporter.hasEncounteredAllWarnings());
+    Compiler compiler = new Compiler();
+    compiler.setErrorManager(testErrorManager);
+    compiler.initOptions(options);
+
+    Node script = compiler.parse(SourceFile.fromCode("[test]", source));
+
+    // Verifying that all warnings were seen
+    assertTrue("Missing an error", testErrorManager.hasEncounteredAllErrors());
+    assertTrue("Missing a warning", testErrorManager.hasEncounteredAllWarnings());
+
+    if (script != null && testErrorManager.getErrorCount() == 0) {
+      // if it can be parsed, it should round trip.
+      String actual = new CodePrinter.Builder(script)
+          .setCompilerOptions(options)
+          .setTypeRegistry(compiler.getTypeRegistry())
+          .build()  // does the actual printing.
+          .trim();
+      assertEquals(source, actual);
+    }
 
     return script;
   }
