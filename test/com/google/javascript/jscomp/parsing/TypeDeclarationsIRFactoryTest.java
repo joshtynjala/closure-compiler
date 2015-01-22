@@ -1,15 +1,18 @@
-package com.google.javascript.rhino;
-
-import com.google.common.truth.FailureStrategy;
-import com.google.common.truth.Subject;
-import com.google.javascript.jscomp.parsing.JsDocInfoParser;
-import junit.framework.TestCase;
-
-import javax.annotation.CheckReturnValue;
-import java.util.LinkedHashMap;
+package com.google.javascript.jscomp.parsing;
 
 import static com.google.common.truth.Truth.THROW_ASSERTION_ERROR;
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.anyType;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.booleanType;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.namedType;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.nullType;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.numberType;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.optionalParameter;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.parameterizedType;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.recordType;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.stringType;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.undefinedType;
+import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.unionType;
 import static com.google.javascript.rhino.Node.TypeDeclarationNode;
 import static com.google.javascript.rhino.Token.ANY_TYPE;
 import static com.google.javascript.rhino.Token.BOOLEAN_TYPE;
@@ -23,18 +26,16 @@ import static com.google.javascript.rhino.Token.REST_PARAMETER_TYPE;
 import static com.google.javascript.rhino.Token.STRING_TYPE;
 import static com.google.javascript.rhino.Token.UNDEFINED_TYPE;
 import static com.google.javascript.rhino.Token.VOID_TYPE;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.anyType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.booleanType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.namedType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.nullType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.numberType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.optionalParameter;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.parameterizedType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.recordType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.stringType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.undefinedType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.unionType;
 import static java.util.Arrays.asList;
+
+import com.google.common.truth.FailureStrategy;
+import com.google.common.truth.Subject;
+import com.google.javascript.rhino.IR;
+import com.google.javascript.rhino.Node;
+
+import junit.framework.TestCase;
+
+import java.util.LinkedHashMap;
 
 public class TypeDeclarationsIRFactoryTest extends TestCase {
 
@@ -189,33 +190,15 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
       super(failureStrategy, subject);
     }
 
-    public And isEqualTo(Node node) {
+    public void isEqualTo(Node node) {
       String treeDiff = node.checkTreeEquals(getSubject());
       if (treeDiff != null) {
         failWithRawMessage("%s", treeDiff);
       }
-      return new And(this);
     }
 
     public void hasType(int tokenType) {
       assertThat(getSubject().getType()).is(tokenType);
-    }
-
-    public void hasBooleanProperty(int property, boolean value) {
-      assertThat(getSubject().getBooleanProp(property)).isEqualTo(value);
-    }
-
-    private class And {
-      private NodeSubject nodeSubject;
-
-      public And(NodeSubject nodeSubject) {
-        this.nodeSubject = nodeSubject;
-      }
-
-      @CheckReturnValue
-      public NodeSubject and() {
-        return nodeSubject;
-      }
     }
   }
 }

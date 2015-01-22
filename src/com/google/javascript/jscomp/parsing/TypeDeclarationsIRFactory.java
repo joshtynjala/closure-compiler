@@ -1,17 +1,22 @@
-package com.google.javascript.rhino;
+package com.google.javascript.jscomp.parsing;
+
+import static com.google.javascript.rhino.Node.TypeDeclarationNode;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import com.google.javascript.rhino.IR;
+import com.google.javascript.rhino.JSTypeExpression;
+import com.google.javascript.rhino.Node;
+import com.google.javascript.rhino.Token;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.google.javascript.rhino.Node.TypeDeclarationNode;
+import javax.annotation.Nullable;
 
 /**
  * Produces ASTs which represent JavaScript type declarations, both those created from
