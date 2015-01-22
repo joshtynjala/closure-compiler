@@ -17,11 +17,11 @@ import static com.google.javascript.rhino.Token.FUNCTION_TYPE;
 import static com.google.javascript.rhino.Token.NAMED_TYPE;
 import static com.google.javascript.rhino.Token.NULL_TYPE;
 import static com.google.javascript.rhino.Token.NUMBER_TYPE;
-import static com.google.javascript.rhino.Token.OBJECTLIT;
 import static com.google.javascript.rhino.Token.PARAMETERIZED_TYPE;
 import static com.google.javascript.rhino.Token.RECORD_TYPE;
 import static com.google.javascript.rhino.Token.REST_PARAMETER_TYPE;
 import static com.google.javascript.rhino.Token.STRING_TYPE;
+import static com.google.javascript.rhino.Token.UNDEFINED_TYPE;
 import static com.google.javascript.rhino.Token.VOID_TYPE;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.anyType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.booleanType;
@@ -32,8 +32,8 @@ import static com.google.javascript.rhino.TypeDeclarationsIRFactory.optionalPara
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.parameterizedType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.recordType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.stringType;
+import static com.google.javascript.rhino.TypeDeclarationsIRFactory.undefinedType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.unionType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.voidType;
 import static java.util.Arrays.asList;
 
 public class TypeDeclarationsIRFactoryTest extends TestCase {
@@ -45,12 +45,13 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     assertParseTypeAndConvert("number").hasType(NUMBER_TYPE);
     assertParseTypeAndConvert("string").hasType(STRING_TYPE);
     assertParseTypeAndConvert("void").hasType(VOID_TYPE);
-    assertParseTypeAndConvert("undefined").hasType(VOID_TYPE);
+    assertParseTypeAndConvert("undefined").hasType(UNDEFINED_TYPE);
   }
 
   public void testConvertStarType() throws Exception {
     assertParseTypeAndConvert("*").isEqualTo(unionType(
-        namedType("Object"), numberType(), stringType(), booleanType(), nullType(), voidType()));
+        namedType("Object"), numberType(), stringType(),
+        booleanType(), nullType(), undefinedType()));
   }
 
   public void testConvertNamedTypes() throws Exception {

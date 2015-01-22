@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -64,6 +65,13 @@ public class TypeDeclarationsIRFactory {
    */
   public static TypeDeclarationNode voidType() {
     return new TypeDeclarationNode(Token.VOID_TYPE);
+  }
+
+  /**
+   * @return a new node representing the Undefined type as defined by TypeScript.
+   */
+  public static TypeDeclarationNode undefinedType() {
+    return new TypeDeclarationNode(Token.UNDEFINED_TYPE);
   }
 
   /**
@@ -240,6 +248,13 @@ public class TypeDeclarationsIRFactory {
         }
       };
 
+  public static TypeDeclarationNode convert(@Nullable JSTypeExpression typeExpr) {
+    if (typeExpr == null) {
+      return anyType();
+    }
+    return convertTypeNodeAST(typeExpr.getRoot());
+  }
+
   /**
    * The root of a JSTypeExpression is very different from an AST node, even
    * though we use the same Java class to represent them.
@@ -253,7 +268,8 @@ public class TypeDeclarationsIRFactory {
     switch (token) {
       case Token.STAR:
         return unionType(
-            namedType("Object"), numberType(), stringType(), booleanType(), nullType(), voidType());
+            namedType("Object"), numberType(), stringType(),
+            booleanType(), nullType(), undefinedType());
       case Token.VOID:
         return voidType();
       case Token.EMPTY: // for function types that don't declare a return type
@@ -273,6 +289,7 @@ public class TypeDeclarationsIRFactory {
           case "string":
             return stringType();
           case "undefined":
+            return undefinedType();
           case "void":
             return voidType();
           default:
