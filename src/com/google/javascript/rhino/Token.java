@@ -331,11 +331,20 @@ public class Token {
           case LB:              return "LB";
           case LC:              return "LC";
           case COLON:           return "COLON";
+          case STRING_TYPE:     return "STRING_TYPE";
+          case ANY_TYPE:        return "ANY_TYPE";
+          case UNKNOWN_TYPE:    return "UNKNOWN_TYPE";
+          case NULL_TYPE:       return "NULL_TYPE";
+          case VOID_TYPE:       return "VOID_TYPE";
           case BOOLEAN_TYPE:       return "BOOLEAN_TYPE";
           case NUMBER_TYPE:        return "NUMBER_TYPE";
           case PARAMETERIZED_TYPE: return "PARAMETERIZED_TYPE";
           case UNION_TYPE:         return "UNION_TYPE";
           case FUNCTION_TYPE:      return "FUNCTION_TYPE";
+          case REST_PARAMETER_TYPE: return "REST_PARAMETER_TYPE";
+          case NAMED_TYPE:         return "NAMED_TYPE";
+          case OPTIONAL_PARAMETER: return "OPTIONAL_PARAMETER";
+          case RECORD_TYPE:        return "RECORD_TYPE";
           case UNDEFINED_TYPE:     return "UNDEFINED_TYPE";
 
           case ARRAY_PATTERN:   return "ARRAY_PATTERN";
