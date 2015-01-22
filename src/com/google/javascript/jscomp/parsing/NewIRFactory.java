@@ -801,7 +801,7 @@ class NewIRFactory {
     return node;
   }
 
-  private void attachJSDoc(JSDocInfo info, Node n) {
+  private static void attachJSDoc(JSDocInfo info, Node n) {
     info.setAssociatedNode(n);
     n.setJSDocInfo(info);
   }
