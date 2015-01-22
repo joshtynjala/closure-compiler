@@ -98,15 +98,21 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
   }
 
   public void testFunctionReturn() {
-    Node fn = parse("function foo(): string { return 'hello'; }").getFirstChild();
-    JSDocInfo fnDocInfo = fn.getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, fnDocInfo.getReturnType());
+    Node fn = parse("function foo(): string {\n  return'hello';\n}").getFirstChild();
+    JSTypeExpression returnType = fn.getJSTypeExpression();
+    assertTypeEquals(STRING_TYPE, returnType);
   }
 
   public void testFunctionReturn_arrow() {
     Node fn = parse("(): string => 'hello';").getFirstChild().getFirstChild();
-    JSDocInfo fnDocInfo = fn.getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, fnDocInfo.getReturnType());
+    JSTypeExpression returnType = fn.getJSTypeExpression();
+    assertTypeEquals(STRING_TYPE, returnType);
+  }
+
+  public void testFunctionReturn_typeInDocAndSyntax() throws Exception {
+    expectErrors("Parse error. Bad type syntax - "
+        + "can only have JSDoc or inline type annotations, not both");
+    parse("function /** string */ foo(): string { return 'hello'; }");
   }
 
   private Node parse(String source) {
@@ -125,8 +131,8 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
     Node script = compiler.parse(SourceFile.fromCode("[test]", source));
 
     // Verifying that all warnings were seen
-    assertTrue(testErrorManager.hasEncounteredAllErrors());
-    assertTrue(testErrorManager.hasEncounteredAllWarnings());
+    assertTrue("Missing an error", testErrorManager.hasEncounteredAllErrors());
+    assertTrue("Missing a warning", testErrorManager.hasEncounteredAllWarnings());
 
     if (script != null && testErrorManager.getErrorCount() == 0) {
       // if it can be parsed, it should round trip.

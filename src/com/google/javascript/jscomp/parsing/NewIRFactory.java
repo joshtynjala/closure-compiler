@@ -107,7 +107,6 @@ import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 import com.google.javascript.rhino.ErrorReporter;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.JSDocInfo;
-import com.google.javascript.rhino.JSDocInfoBuilder;
 import com.google.javascript.rhino.JSTypeExpression;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
@@ -462,12 +461,14 @@ class NewIRFactory {
     validateFunctionJsDoc(n);
   }
 
-  private void reportJsDocTypeSyntaxConflict(ParseTree parseTree) {
-    errorReporter.error("Bad type syntax"
-            + " - can only have JSDoc or inline type annotations, not both",
-        sourceName, lineno(parseTree), charno(parseTree));
+  private JSDocInfo checkTypeSyntaxDocConflict(SourceRange location, JSDocInfo info) {
+    if (info.hasTypeInformation() && hasTypeSyntax) {
+      errorReporter.error("Bad type syntax"
+          + " - can only have JSDoc or inline type annotations, not both",
+          sourceName, lineno(location.start), charno(location.start));
+    }
+    return info;
   }
-
 
   /**
    * Checks that JSDoc intended for a function is actually attached to a
@@ -696,7 +697,8 @@ class NewIRFactory {
       JsDocInfoParser jsDocParser = createJsDocInfoParser(comment);
       parsedComments.add(comment);
       if (!handlePossibleFileOverviewJsDoc(jsDocParser)) {
-        return jsDocParser.retrieveAndResetParsedJSDocInfo();
+        return checkTypeSyntaxDocConflict(comment.location,
+            jsDocParser.retrieveAndResetParsedJSDocInfo());
       }
     }
     return null;
@@ -785,7 +787,7 @@ class NewIRFactory {
     return node;
   }
 
-  private static void attachJSDoc(JSDocInfo info, Node n) {
+  private void attachJSDoc(JSDocInfo info, Node n) {
     info.setAssociatedNode(n);
     n.setJSDocInfo(info);
   }
@@ -813,9 +815,6 @@ class NewIRFactory {
     JSDocInfo info = handleInlineJsDoc(node, optionalInline);
     Node irNode = justTransform(node);
     if (info != null) {
-      if (irNode.getJSTypeExpression() != null) {
-        reportJsDocTypeSyntaxConflict(node);
-      }
       irNode.setJSDocInfo(info);
     }
     setSourceInfo(irNode, node);
@@ -998,6 +997,8 @@ class NewIRFactory {
   }
 
   private class TransformDispatcher extends NewTypeSafeDispatcher<Node> {
+    private boolean hasTypeSyntax;
+
     /**
      * Transforms the given node and then sets its type to Token.STRING if it
      * was Token.NAME. If its type was already Token.STRING, then quotes it.
@@ -1324,13 +1325,11 @@ class NewIRFactory {
       node.addChildToBack(transform(functionTree.formalParameterList));
 
       if (functionTree.returnType != null) {
-        JSTypeExpression returnType = convertTypeTree(functionTree.returnType);
-        JSDocInfoBuilder jsdocBuilder = JSDocInfoBuilder.maybeCopyFrom(node.getJSDocInfo());
-        if (!jsdocBuilder.recordReturnType(returnType)) {
+        if (node.getJSDocInfo() != null && node.getJSDocInfo().hasReturnType()) {
           reportJsDocTypeSyntaxConflict(functionTree.returnType);
         }
-        JSDocInfo info = jsdocBuilder.build(node);
-        node.setJSDocInfo(info);
+        JSTypeExpression returnType = convertTypeTree(functionTree.returnType);
+        node.setJsTypeExpression(returnType);
       }
 
       Node bodyNode = transform(functionTree.functionBody);
@@ -2168,6 +2167,7 @@ class NewIRFactory {
 
     @Override
     Node processTypedParameter(TypedParameterTree typeAnnotation) {
+      maybeWarnTypeSyntax(typeAnnotation);
       Node param = process(typeAnnotation.param);
       maybeProcessType(param, typeAnnotation.typeAnnotation);
       return param;
@@ -2227,6 +2227,7 @@ class NewIRFactory {
             sourceName,
             lineno(node), charno(node));
       }
+      hasTypeSyntax = true;
     }
 
     @Override

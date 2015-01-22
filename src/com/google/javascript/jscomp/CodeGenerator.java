@@ -360,7 +360,9 @@ class CodeGenerator {
 
         add(first);
 
-        add(first.getNext());
+        add(first.getNext());  // param list
+
+        maybeAddTypeDecl(n);
         if (isArrow) {
           cc.addOp("=>", true);
         }
