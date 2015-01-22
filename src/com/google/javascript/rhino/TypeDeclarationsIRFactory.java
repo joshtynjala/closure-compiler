@@ -1,6 +1,7 @@
 package com.google.javascript.rhino;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 
@@ -63,13 +64,6 @@ public class TypeDeclarationsIRFactory {
    */
   public static TypeDeclarationNode voidType() {
     return new TypeDeclarationNode(Token.VOID_TYPE);
-  }
-
-  /**
-   * @return a new node representing a type which is not declared.
-   */
-  public static TypeDeclarationNode unknownType() {
-    return new TypeDeclarationNode(Token.UNKNOWN_TYPE);
   }
 
   /**
@@ -191,6 +185,7 @@ public class TypeDeclarationsIRFactory {
    * @return a new node representing the union type
    */
   public static TypeDeclarationNode unionType(Iterable<TypeDeclarationNode> options) {
+    Preconditions.checkArgument(!Iterables.isEmpty(options), "union must have at least one option");
     TypeDeclarationNode node = new TypeDeclarationNode(Token.UNION_TYPE);
     for (Node option : options) {
       node.addChildToBack(option);
@@ -225,6 +220,17 @@ public class TypeDeclarationsIRFactory {
     return new TypeDeclarationNode(Token.REST_PARAMETER_TYPE, type);
   }
 
+  /**
+   * Represents a function parameter that is optional.
+   * In closure syntax, this is {@code function(?string=, number=)}
+   * In TypeScript syntax, it is {@code (firstName: string, lastName?: string)=>string}
+   * @param parameterType the type of the parameter
+   * @return a new node representing the function parameter type
+   */
+  public static TypeDeclarationNode optionalParameter(TypeDeclarationNode parameterType) {
+    return new TypeDeclarationNode(Token.OPTIONAL_PARAMETER, parameterType);
+  }
+
   // Allow functional-style Iterables.transform over collections of nodes.
   private static final Function<Node, TypeDeclarationNode> CONVERT_TYPE_NODE =
       new Function<Node, TypeDeclarationNode>() {
@@ -246,11 +252,11 @@ public class TypeDeclarationsIRFactory {
     int token = n.getType();
     switch (token) {
       case Token.STAR:
-        return unknownType();
+        return anyType();
       case Token.VOID:
         return voidType();
       case Token.EMPTY: // for function types that don't declare a return type
-        return unknownType();
+        return anyType();
       case Token.BANG:
         TypeDeclarationNode node = convertTypeNodeAST(n.getFirstChild());
 
@@ -269,7 +275,6 @@ public class TypeDeclarationsIRFactory {
           case "string":
             return stringType();
           case "undefined":
-            return unknownType();
           case "void":
             return voidType();
           default:
@@ -293,7 +298,7 @@ public class TypeDeclarationsIRFactory {
             fieldName = fieldName.substring(1, fieldName.length() - 1);
           }
           TypeDeclarationNode fieldType = isFieldTypeDeclared
-              ? convertTypeNodeAST(field.getLastChild()) : unknownType();
+              ? convertTypeNodeAST(field.getLastChild()) : anyType();
           properties.put(fieldName, fieldType);
         }
         return recordType(properties);
@@ -302,7 +307,7 @@ public class TypeDeclarationsIRFactory {
       case Token.ELLIPSIS:
         return restParams(convertTypeNodeAST(n.getFirstChild()));
       case Token.FUNCTION:
-        Node returnType = unknownType();
+        Node returnType = anyType();
         LinkedHashMap<String, TypeDeclarationNode> parameters = new LinkedHashMap<>();
         for (Node child2 : n.children()) {
           if (child2.isParamList()) {
@@ -319,11 +324,12 @@ public class TypeDeclarationsIRFactory {
           }
         }
         return functionType(returnType, parameters);
+      case Token.EQUALS:
+        return optionalParameter(convertTypeNodeAST(n.getFirstChild()));
       default:
         throw new IllegalArgumentException(
             "Unsupported node type: " + Token.name(n.getType())
                 + " " + n.toStringTree());
     }
   }
-
 }

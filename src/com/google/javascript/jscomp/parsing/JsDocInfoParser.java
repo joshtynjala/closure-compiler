@@ -2005,7 +2005,7 @@ public final class JsDocInfoParser {
     if (token == JsDocToken.QMARK) {
       // A QMARK could mean that a type is nullable, or that it's unknown.
       // We use look-ahead 1 to determine whether it's unknown. Otherwise,
-      // we assume it means nullable. There are 9 cases:
+      // we assume it means nullable. There are 8 cases:
       // {?} - right curly
       // ? - EOF (possible when the parseTypeString method is given a bare type expression)
       // {?=} - equals

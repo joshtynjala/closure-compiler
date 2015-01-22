@@ -24,6 +24,7 @@ import static com.google.javascript.rhino.Token.REST_PARAMETER_TYPE;
 import static com.google.javascript.rhino.Token.STRING_TYPE;
 import static com.google.javascript.rhino.Token.UNKNOWN_TYPE;
 import static com.google.javascript.rhino.Token.VOID_TYPE;
+import static com.google.javascript.rhino.TypeDeclarationsIRFactory.anyType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.booleanType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.namedType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.nullType;
@@ -32,20 +33,19 @@ import static com.google.javascript.rhino.TypeDeclarationsIRFactory.parameterize
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.recordType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.stringType;
 import static com.google.javascript.rhino.TypeDeclarationsIRFactory.unionType;
-import static com.google.javascript.rhino.TypeDeclarationsIRFactory.unknownType;
 import static java.util.Arrays.asList;
 
 public class TypeDeclarationsIRFactoryTest extends TestCase {
 
   public void testConvertSimpleTypes() {
-    assertParseTypeAndConvert("*").hasType(UNKNOWN_TYPE);
+    assertParseTypeAndConvert("*").hasType(ANY_TYPE);
     assertParseTypeAndConvert("?").hasType(ANY_TYPE);
     assertParseTypeAndConvert("boolean").hasType(BOOLEAN_TYPE);
     assertParseTypeAndConvert("null").hasType(NULL_TYPE);
     assertParseTypeAndConvert("number").hasType(NUMBER_TYPE);
     assertParseTypeAndConvert("string").hasType(STRING_TYPE);
     assertParseTypeAndConvert("void").hasType(VOID_TYPE);
-    assertParseTypeAndConvert("undefined").hasType(UNKNOWN_TYPE);
+    assertParseTypeAndConvert("undefined").hasType(VOID_TYPE);
   }
 
   public void testConvertNamedTypes() throws Exception {
@@ -79,7 +79,7 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
   public void testConvertRecordType() throws Exception {
     LinkedHashMap<String, TypeDeclarationNode> properties = new LinkedHashMap<>();
     properties.put("myNum", numberType());
-    properties.put("myObject", unknownType());
+    properties.put("myObject", anyType());
 
     assertParseTypeAndConvert("{myNum: number, myObject}")
         .isEqualTo(recordType(properties));
@@ -88,13 +88,13 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
   public void testCreateRecordType() throws Exception {
     LinkedHashMap<String, TypeDeclarationNode> properties = new LinkedHashMap<>();
     properties.put("myNum", numberType());
-    properties.put("myObject", unknownType());
+    properties.put("myObject", anyType());
     TypeDeclarationNode node = recordType(properties);
 
     Node key1 = IR.stringKey("myNum");
     key1.addChildToFront(new TypeDeclarationNode(NUMBER_TYPE));
     Node key2 = IR.stringKey("myObject");
-    key2.addChildToFront(new TypeDeclarationNode(UNKNOWN_TYPE));
+    key2.addChildToFront(new TypeDeclarationNode(ANY_TYPE));
 
     assertNode(node)
         .isEqualTo(new TypeDeclarationNode(OBJECTLIT, key1, key2));
@@ -102,9 +102,11 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
 
   public void testConvertRecordTypeWithTypeApplication() throws Exception {
     Node key = IR.stringKey("length");
-    key.addChildToFront(unknownType());
+    key.addChildToFront(anyType());
     assertParseTypeAndConvert("Array.<{length}>")
-        .isEqualTo(new TypeDeclarationNode(PARAMETERIZED_TYPE, namedType("Array"), new TypeDeclarationNode(OBJECTLIT, key)));
+        .isEqualTo(new TypeDeclarationNode(PARAMETERIZED_TYPE,
+            namedType("Array"),
+            new TypeDeclarationNode(OBJECTLIT, key)));
   }
 
   public void testConvertNullableType() throws Exception {
@@ -124,7 +126,7 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     Node stringKey1 = IR.stringKey("p2");
     stringKey1.addChildToFront(booleanType());
     assertParseTypeAndConvert("function(string, boolean)")
-        .isEqualTo(new TypeDeclarationNode(FUNCTION_TYPE, unknownType(), stringKey, stringKey1));
+        .isEqualTo(new TypeDeclarationNode(FUNCTION_TYPE, anyType(), stringKey, stringKey1));
   }
 
   public void testConvertFunctionReturnType() throws Exception {
@@ -136,14 +138,14 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     Node stringKey1 = IR.stringKey("p1");
     stringKey1.addChildToFront(stringType());
     assertParseTypeAndConvert("function(this:goog.ui.Menu, string)")
-        .isEqualTo(new TypeDeclarationNode(FUNCTION_TYPE, unknownType(), stringKey1));
+        .isEqualTo(new TypeDeclarationNode(FUNCTION_TYPE, anyType(), stringKey1));
   }
 
   public void testConvertFunctionNewType() throws Exception {
     Node stringKey1 = IR.stringKey("p1");
     stringKey1.addChildToFront(stringType());
     assertParseTypeAndConvert("function(new:goog.ui.Menu, string)")
-        .isEqualTo(new TypeDeclarationNode(FUNCTION_TYPE, unknownType(), stringKey1));
+        .isEqualTo(new TypeDeclarationNode(FUNCTION_TYPE, anyType(), stringKey1));
   }
 
   public void testConvertVariableParameters() throws Exception {
@@ -153,6 +155,14 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     stringKey2.addChildToFront(new TypeDeclarationNode(REST_PARAMETER_TYPE, numberType()));
     assertParseTypeAndConvert("function(string, ...number): number")
         .isEqualTo(new TypeDeclarationNode(FUNCTION_TYPE, numberType(), stringKey1, stringKey2));
+  }
+
+  public void testConvertOptionalFunctionParameters() throws Exception {
+    LinkedHashMap<String, TypeDeclarationNode> parameters = new LinkedHashMap<>();
+    parameters.put("p1", unionType(nullType(), stringType()));
+    parameters.put("p2", numberType());
+    assertParseTypeAndConvert("function(?string=, number=)")
+        .isEqualTo(TypeDeclarationsIRFactory.functionType(anyType(), parameters));
   }
 
   private NodeSubject assertNode(final Node node) {
