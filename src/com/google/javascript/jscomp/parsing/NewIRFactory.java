@@ -109,7 +109,6 @@ import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 import com.google.javascript.rhino.ErrorReporter;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.JSDocInfo;
-import com.google.javascript.rhino.JSDocInfoBuilder;
 import com.google.javascript.rhino.JSTypeExpression;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
@@ -232,6 +231,8 @@ class NewIRFactory {
   private Comment currentComment;
 
   private boolean currentFileIsExterns = false;
+  private boolean hasTypeSyntax = false;
+  private boolean hasTypeAnnotations = false;
 
   private NewIRFactory(String sourceString,
                     StaticSourceFile sourceFile,
@@ -278,8 +279,11 @@ class NewIRFactory {
       case ECMASCRIPT6_STRICT:
         reservedKeywords = ES5_STRICT_RESERVED_KEYWORDS;
         break;
+      case ECMASCRIPT6_TYPED:
+        reservedKeywords = ES5_STRICT_RESERVED_KEYWORDS;
+        break;
       default:
-        throw new IllegalStateException("unknown language mode");
+        throw new IllegalStateException("unknown language mode: " + config.languageMode);
     }
   }
 
@@ -461,12 +465,26 @@ class NewIRFactory {
     validateFunctionJsDoc(n);
   }
 
-  private void reportJsDocTypeSyntaxConflict(ParseTree parseTree) {
-    errorReporter.error("Bad type annotation"
+  private JSDocInfo recordJsDoc(SourceRange location, JSDocInfo info) {
+    if (info != null && info.hasTypeInformation()) {
+      hasTypeAnnotations = true;
+      if (hasTypeSyntax) {
+        errorReporter.error("Bad type syntax"
             + " - can only have JSDoc or inline type annotations, not both",
-        sourceName, lineno(parseTree), charno(parseTree));
+            sourceName, lineno(location.start), charno(location.start));
+      }
+    }
+    return info;
   }
 
+  private void recordTypeSyntax(SourceRange location) {
+    hasTypeSyntax = true;
+    if (hasTypeAnnotations) {
+      errorReporter.error("Bad type syntax"
+          + " - can only have JSDoc or inline type annotations, not both",
+          sourceName, lineno(location.start), charno(location.start));
+    }
+  }
 
   /**
    * Checks that JSDoc intended for a function is actually attached to a
@@ -695,7 +713,8 @@ class NewIRFactory {
       JsDocInfoParser jsDocParser = createJsDocInfoParser(comment);
       parsedComments.add(comment);
       if (!handlePossibleFileOverviewJsDoc(jsDocParser)) {
-        return jsDocParser.retrieveAndResetParsedJSDocInfo();
+        return recordJsDoc(comment.location,
+            jsDocParser.retrieveAndResetParsedJSDocInfo());
       }
     }
     return null;
@@ -812,9 +831,6 @@ class NewIRFactory {
     JSDocInfo info = handleInlineJsDoc(node, optionalInline);
     Node irNode = justTransform(node);
     if (info != null) {
-      if (irNode.getJSDocInfo() != null) {
-        reportJsDocTypeSyntaxConflict(node);
-      }
       irNode.setJSDocInfo(info);
     }
     setSourceInfo(irNode, node);
@@ -836,7 +852,7 @@ class NewIRFactory {
       boolean optional) {
     Comment comment = getJsDoc(location);
     if (comment != null && (!optional || !comment.value.contains("@"))) {
-      return parseInlineTypeDoc(comment);
+      return recordJsDoc(location, parseInlineTypeDoc(comment));
     } else {
       return handleJsDoc(comment);
     }
@@ -997,6 +1013,7 @@ class NewIRFactory {
   }
 
   private class TransformDispatcher extends NewTypeSafeDispatcher<Node> {
+
     /**
      * Transforms the given node and then sets its type to Token.STRING if it
      * was Token.NAME. If its type was already Token.STRING, then quotes it.
@@ -1323,13 +1340,9 @@ class NewIRFactory {
       node.addChildToBack(transform(functionTree.formalParameterList));
 
       if (functionTree.returnType != null) {
+        recordJsDoc(functionTree.returnType.location, node.getJSDocInfo());
         JSTypeExpression returnType = convertTypeTree(functionTree.returnType);
-        JSDocInfoBuilder jsdocBuilder = JSDocInfoBuilder.maybeCopyFrom(node.getJSDocInfo());
-        if (!jsdocBuilder.recordReturnType(returnType)) {
-          reportJsDocTypeSyntaxConflict(functionTree.returnType);
-        }
-        JSDocInfo info = jsdocBuilder.build(node);
-        node.setJSDocInfo(info);
+        node.setJsTypeExpression(returnType);
       }
 
       Node bodyNode = transform(functionTree.functionBody);
@@ -2167,11 +2180,12 @@ class NewIRFactory {
 
     @Override
     Node processTypeName(TypeNameTree tree) {
-      return Node.newString(tree.value, lineno(tree), charno(tree));
+      return Node.newString(Token.NAME, tree.value, lineno(tree), charno(tree));
     }
 
     @Override
     Node processTypedParameter(TypedParameterTree typeAnnotation) {
+      maybeWarnTypeSyntax(typeAnnotation);
       Node param = process(typeAnnotation.param);
       maybeProcessType(param, typeAnnotation.typeAnnotation);
       return param;
@@ -2181,13 +2195,9 @@ class NewIRFactory {
       if (typeTree == null) {
         return;
       }
+      recordJsDoc(typeTree.location, typeTarget.getJSDocInfo());
       JSTypeExpression typeExpression = convertTypeTree(typeTree);
-      JSDocInfoBuilder jsdocBuilder = JSDocInfoBuilder.maybeCopyFrom(typeTarget.getJSDocInfo());
-      if (!jsdocBuilder.recordType(typeExpression)) {
-        reportJsDocTypeSyntaxConflict(typeTree);
-      }
-      JSDocInfo info = jsdocBuilder.build(typeTarget);
-      typeTarget.setJSDocInfo(info);
+      typeTarget.setJsTypeExpression(typeExpression);
     }
 
     private JSTypeExpression convertTypeTree(ParseTree typeTree) {
@@ -2237,12 +2247,13 @@ class NewIRFactory {
     }
 
     void maybeWarnTypeSyntax(ParseTree node) {
-      if (!config.acceptTypeSyntax) {
+      if (config.languageMode != LanguageMode.ECMASCRIPT6_TYPED) {
         errorReporter.warning(
-            "support for type syntax is not enabled",
+            "type syntax is only supported in ES6 typed mode",
             sourceName,
             lineno(node), charno(node));
       }
+      recordTypeSyntax(node.location);
     }
 
     @Override
@@ -2388,7 +2399,8 @@ class NewIRFactory {
 
   boolean isEs6Mode() {
     return config.languageMode == LanguageMode.ECMASCRIPT6
-        || config.languageMode == LanguageMode.ECMASCRIPT6_STRICT;
+        || config.languageMode == LanguageMode.ECMASCRIPT6_STRICT
+        || config.languageMode == LanguageMode.ECMASCRIPT6_TYPED;
   }
 
   boolean isEs5OrBetterMode() {
@@ -2399,7 +2411,8 @@ class NewIRFactory {
     // TODO(johnlenz): in ECMASCRIPT5/6 is a "mixed" mode and we should track the context
     // that we are in, if we want to support it.
     return config.languageMode == LanguageMode.ECMASCRIPT5_STRICT
-        || config.languageMode == LanguageMode.ECMASCRIPT6_STRICT;
+        || config.languageMode == LanguageMode.ECMASCRIPT6_STRICT
+        || config.languageMode == LanguageMode.ECMASCRIPT6_TYPED;
   }
 
   double normalizeNumber(LiteralToken token) {
