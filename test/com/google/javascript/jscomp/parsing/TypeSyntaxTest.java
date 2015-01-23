@@ -29,7 +29,7 @@ import com.google.javascript.rhino.testing.BaseJSTypeTestCase;
 
 import junit.framework.TestCase;
 
-public class TypeSyntaxTest extends TestCase {
+public class TypeSyntaxTest extends BaseJSTypeTestCase {
 
   private TestErrorManager testErrorManager;
 
