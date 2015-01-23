@@ -16,17 +16,19 @@
 
 package com.google.javascript.jscomp.parsing.parser.trees;
 
+import com.google.common.collect.ImmutableList;
 import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 
 /**
- * Parse tree node representing a type name (of the form {@code foo.bar.Baz}).
+ * Parse tree node representing a type name (of the form {@code foo.bar.Baz}) split into segments (
+ * {@code [foo, bar, Baz]}).
  */
 public class TypeNameTree extends ParseTree {
 
-  public final String value;
+  public final ImmutableList<String> segments;
 
-  public TypeNameTree(SourceRange location, String value) {
+  public TypeNameTree(SourceRange location, ImmutableList<String> segments) {
     super(ParseTreeType.TYPE_NAME, location);
-    this.value = value;
+    this.segments = segments;
   }
 }
