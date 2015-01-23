@@ -27,8 +27,6 @@ import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 import com.google.javascript.rhino.jstype.JSType;
 import com.google.javascript.rhino.jstype.NamedType;
-import com.google.javascript.rhino.jstype.SimpleSourceFile;
-import com.google.javascript.rhino.jstype.StaticSourceFile;
 import com.google.javascript.rhino.testing.BaseJSTypeTestCase;
 
 public class TypeSyntaxTest extends BaseJSTypeTestCase {
