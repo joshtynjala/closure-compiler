@@ -230,7 +230,7 @@ class NewIRFactory {
 
   private boolean currentFileIsExterns = false;
   private boolean hasTypeSyntax = false;
-  private boolean hasTypeAnnotations = false;
+  private boolean hasJsDocTypeAnnotations = false;
 
   private NewIRFactory(String sourceString,
                     StaticSourceFile sourceFile,
@@ -465,7 +465,7 @@ class NewIRFactory {
 
   private JSDocInfo recordJsDoc(SourceRange location, JSDocInfo info) {
     if (info != null && info.hasTypeInformation()) {
-      hasTypeAnnotations = true;
+      hasJsDocTypeAnnotations = true;
       if (hasTypeSyntax) {
         errorReporter.error("Bad type syntax"
             + " - can only have JSDoc or inline type annotations, not both",
@@ -477,7 +477,7 @@ class NewIRFactory {
 
   private void recordTypeSyntax(SourceRange location) {
     hasTypeSyntax = true;
-    if (hasTypeAnnotations) {
+    if (hasJsDocTypeAnnotations) {
       errorReporter.error("Bad type syntax"
           + " - can only have JSDoc or inline type annotations, not both",
           sourceName, lineno(location.start), charno(location.start));

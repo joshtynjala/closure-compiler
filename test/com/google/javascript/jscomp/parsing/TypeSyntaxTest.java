@@ -115,6 +115,11 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
     parse("function /** string */ foo(): string { return 'hello'; }");
   }
 
+  public void testFunctionReturn_typeInJsdocOnly() throws Exception {
+    parse("function /** string */ foo() { return 'hello'; }",
+        "function/** string */foo() {\n  return'hello';\n}");
+  }
+
   public void testCompositeType() {
     Node varDecl = parse("var foo: mymod.ns.Type;").getFirstChild();
     JSTypeExpression type = varDecl.getFirstChild().getJSTypeExpression();
@@ -128,6 +133,10 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
   }
 
   private Node parse(String source) {
+    return parse(source, source);
+  }
+
+  private Node parse(String source, String expected) {
     CompilerOptions options = new CompilerOptions();
     options.setLanguageIn(LanguageMode.ECMASCRIPT6_TYPED);
     options.setLanguageOut(LanguageMode.ECMASCRIPT6_TYPED);
@@ -153,7 +162,7 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
           .setTypeRegistry(compiler.getTypeRegistry())
           .build()  // does the actual printing.
           .trim();
-      assertEquals(source, actual);
+      assertEquals(expected, actual);
     }
 
     return script;
