@@ -27,7 +27,9 @@ import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 import com.google.javascript.rhino.testing.BaseJSTypeTestCase;
 
-public class TypeSyntaxTest extends BaseJSTypeTestCase {
+import junit.framework.TestCase;
+
+public class TypeSyntaxTest extends TestCase {
 
   private TestErrorManager testErrorManager;
 
