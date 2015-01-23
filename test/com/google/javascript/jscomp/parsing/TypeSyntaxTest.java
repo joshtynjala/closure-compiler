@@ -25,11 +25,12 @@ import com.google.javascript.jscomp.SourceFile;
 import com.google.javascript.jscomp.testing.TestErrorManager;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Node.TypeDeclarationNode;
-import com.google.javascript.rhino.testing.BaseJSTypeTestCase;
+
+import junit.framework.TestCase;
 
 import java.util.Collections;
 
-public class TypeSyntaxTest extends BaseJSTypeTestCase {
+public class TypeSyntaxTest extends TestCase {
 
   private TestErrorManager testErrorManager;
 
