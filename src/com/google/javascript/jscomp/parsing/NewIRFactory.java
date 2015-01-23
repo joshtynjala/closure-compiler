@@ -111,6 +111,7 @@ import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.JSDocInfo;
 import com.google.javascript.rhino.JSTypeExpression;
 import com.google.javascript.rhino.Node;
+import com.google.javascript.rhino.Node.TypeDeclarationNode;
 import com.google.javascript.rhino.Token;
 import com.google.javascript.rhino.TokenStream;
 import com.google.javascript.rhino.jstype.StaticSourceFile;
@@ -232,7 +233,7 @@ class NewIRFactory {
 
   private boolean currentFileIsExterns = false;
   private boolean hasTypeSyntax = false;
-  private boolean hasTypeAnnotations = false;
+  private boolean hasJsDocTypeAnnotations = false;
 
   private NewIRFactory(String sourceString,
                     StaticSourceFile sourceFile,
@@ -467,7 +468,7 @@ class NewIRFactory {
 
   private JSDocInfo recordJsDoc(SourceRange location, JSDocInfo info) {
     if (info != null && info.hasTypeInformation()) {
-      hasTypeAnnotations = true;
+      hasJsDocTypeAnnotations = true;
       if (hasTypeSyntax) {
         errorReporter.error("Bad type syntax"
             + " - can only have JSDoc or inline type annotations, not both",
@@ -479,7 +480,7 @@ class NewIRFactory {
 
   private void recordTypeSyntax(SourceRange location) {
     hasTypeSyntax = true;
-    if (hasTypeAnnotations) {
+    if (hasJsDocTypeAnnotations) {
       errorReporter.error("Bad type syntax"
           + " - can only have JSDoc or inline type annotations, not both",
           sourceName, lineno(location.start), charno(location.start));
@@ -2180,7 +2181,35 @@ class NewIRFactory {
 
     @Override
     Node processTypeName(TypeNameTree tree) {
-      return Node.newString(Token.NAME, tree.value, lineno(tree), charno(tree));
+      Node typeNode;
+      if (tree.segments.size() == 1) {
+        String typeName = tree.segments.get(0);
+        switch (typeName) {
+          case "any":
+            typeNode = TypeDeclarationsIRFactory.anyType();
+            break;
+          case "number":
+            typeNode = TypeDeclarationsIRFactory.numberType();
+            break;
+          case "boolean":
+            typeNode = TypeDeclarationsIRFactory.booleanType();
+            break;
+          case "string":
+            typeNode = TypeDeclarationsIRFactory.stringType();
+            break;
+          case "void":
+            typeNode = TypeDeclarationsIRFactory.voidType();
+            break;
+          default:
+            typeNode = TypeDeclarationsIRFactory.namedType(tree.segments);
+            break;
+        }
+      } else {
+        typeNode = TypeDeclarationsIRFactory.namedType(tree.segments);
+      }
+      typeNode.setCharno(charno(tree));
+      typeNode.setLineno(lineno(tree));
+      return typeNode;
     }
 
     @Override
@@ -2209,14 +2238,12 @@ class NewIRFactory {
 
     @Override
     Node processParameterizedType(ParameterizedTypeTree tree) {
-      // ( STRING(TypeName) ( BLOCK TypeParameters... ) )
-      Node typeName = process(tree.typeName);
-      Node typeArgList = IR.block();
-      typeName.addChildrenToBack(typeArgList);
+      ImmutableList.Builder<TypeDeclarationNode> arguments = ImmutableList.builder();
       for (ParseTree arg : tree.typeArguments) {
-        typeArgList.addChildrenToFront(process(arg));
+        arguments.add((TypeDeclarationNode) process(arg));
       }
-      return typeName;
+      TypeDeclarationNode typeName = (TypeDeclarationNode) process(tree.typeName);
+      return TypeDeclarationsIRFactory.parameterizedType(typeName, arguments.build());
     }
 
     private Node transformList(

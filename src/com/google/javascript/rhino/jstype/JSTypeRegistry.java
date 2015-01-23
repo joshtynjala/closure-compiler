@@ -1622,7 +1622,6 @@ public class JSTypeRegistry implements TypeIRegistry, Serializable {
         return getNativeType(VOID_TYPE);
 
       case Token.STRING:
-      case Token.NAME:  // DO NOT SUBMIT: The new type syntax resolution should be separate.
         JSType namedType = getType(scope, n.getString(), sourceName,
             n.getLineno(), n.getCharno());
         if ((namedType instanceof ObjectType) &&

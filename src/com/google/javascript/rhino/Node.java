@@ -184,6 +184,30 @@ public class Node implements Cloneable, Serializable {
       }
   }
 
+  /**
+   * Represents a node in the type declaration AST.
+   */
+  public static class TypeDeclarationNode extends Node {
+
+    private static final long serialVersionUID = 1L;
+
+    public TypeDeclarationNode(int nodeType) {
+      super(nodeType);
+    }
+
+    public TypeDeclarationNode(int nodeType, Node child) {
+      super(nodeType, child);
+    }
+
+    public TypeDeclarationNode(int nodeType, Node left, Node right) {
+      super(nodeType, left, right);
+    }
+
+    public TypeDeclarationNode(int nodeType, Node left, Node mid, Node right) {
+      super(nodeType, left, mid, right);
+    }
+  }
+
   private static class NumberNode extends Node {
 
     private static final long serialVersionUID = 1L;
