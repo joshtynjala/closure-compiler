@@ -49,7 +49,8 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
 
   public void testVariableDeclaration() {
     Node varDecl = parse("var foo: string = 'hello';").getFirstChild();
-    assertTypeEquals(STRING_TYPE, varDecl.getFirstChild().getJSTypeExpression());
+    Node type = varDecl.getFirstChild().getJSTypeExpression().getRoot();
+    assertTrue("string type", TypeDeclarationsIRFactory.stringType().isEquivalentTo(type));
   }
 
   public void testVariableDeclaration_errorIncomplete() {
