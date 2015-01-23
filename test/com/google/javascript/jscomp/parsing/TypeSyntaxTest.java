@@ -25,6 +25,7 @@ import com.google.javascript.jscomp.testing.TestErrorManager;
 import com.google.javascript.rhino.JSTypeExpression;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
+import com.google.javascript.rhino.jstype.JSType;
 import com.google.javascript.rhino.testing.BaseJSTypeTestCase;
 
 import junit.framework.TestCase;
@@ -133,6 +134,29 @@ public class TypeSyntaxTest extends BaseJSTypeTestCase {
   public void testCompositeType_trailingDot() {
     expectErrors("Parse error. 'identifier' expected");
     parse("var foo: mymod.Type.;");
+  }
+
+  public void testArrayType() {
+    Node varDecl = parse("var foo: string[];").getFirstChild();
+    JSTypeExpression parsedType = varDecl.getFirstChild().getJSDocInfo().getType();
+
+    JSType arrayOfString = createNullableType(createTemplatizedType(ARRAY_TYPE, STRING_TYPE));
+    assertTypeEquals(arrayOfString, parsedType);
+  }
+
+  public void testArrayType_missingClose() {
+    expectErrors("']' expected");
+    parse("var foo: string[;");
+  }
+
+  public void testArrayType_namespaced() {
+    Node varDecl = parse("var foo: mymod.ns.Type[];").getFirstChild();
+    JSTypeExpression parsedType = varDecl.getFirstChild().getJSDocInfo().getType();
+
+    JSType arrayOfTypes =
+        createNullableType(createTemplatizedType(ARRAY_TYPE,
+            createNullableType(registry.createNamedType("mymod.ns.Type", null, -1, -1))));
+    assertTypeEquals(arrayOfTypes, parsedType);
   }
 
   private Node parse(String source) {

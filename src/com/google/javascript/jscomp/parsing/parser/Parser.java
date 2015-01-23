@@ -694,9 +694,15 @@ public class Parser {
       // PredefinedType or TypeReference
       ParseTree typeReference = parseTypeReference();
 
-      if (peek(TokenType.OPEN_SQUARE)) {
+      if (!peekImplicitSemiColon() && peek(TokenType.OPEN_SQUARE)) {
         // ArrayType
-        reportError("array types are not yet supported");
+        eat(TokenType.OPEN_SQUARE);
+        eat(TokenType.CLOSE_SQUARE);
+        SourceRange location = getTreeLocation(typeReference.location.start);
+        // Represented as Array<TypeReference>
+        TypeNameTree arrayType = new TypeNameTree(location, "Array");
+        typeReference =
+            new ParameterizedTypeTree(location, arrayType, ImmutableList.of(typeReference));
       }
       return typeReference;
     }
@@ -713,6 +719,7 @@ public class Parser {
     SourcePosition start = getTreeStartLocation();
     IdentifierToken token = eatIdOrKeywordAsId();
 
+    // Dotted type names are represented as single strings with the identifiers concatenated.
     StringBuilder identifier = new StringBuilder(MoreObjects.firstNonNull(token.value, ""));
     while (peek(TokenType.PERIOD)) {
       // ModuleName . Identifier
@@ -724,9 +731,7 @@ public class Parser {
       }
       identifier.append(token.value);
     }
-    // Dotted type names are represented as single strings with the identifiers concatenated.
-    SourceRange range = getTreeLocation(start);
-    return new IdentifierExpressionTree(range, new IdentifierToken(range, identifier.toString()));
+    return new TypeNameTree(getTreeLocation(start), identifier.toString());
   }
 
   private BlockTree parseFunctionBody() {
