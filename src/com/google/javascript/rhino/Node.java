@@ -184,9 +184,6 @@ public class Node implements Cloneable, Serializable {
       }
   }
 
-  /**
-   * Represents a node in the type declaration AST.
-   */
   public static class TypeDeclarationNode extends Node {
 
     private static final long serialVersionUID = 1L;
@@ -805,7 +802,7 @@ public class Node implements Cloneable, Serializable {
 
   public void replaceChildAfter(Node prevChild, Node newChild) {
     Preconditions.checkArgument(prevChild.parent == this,
-      "prev is not a child of this node.");
+        "prev is not a child of this node.");
 
     Preconditions.checkArgument(newChild.next == null,
         "The new child node has siblings.");
