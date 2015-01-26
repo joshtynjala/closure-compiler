@@ -50,6 +50,7 @@ import com.google.javascript.rhino.InputId;
 import com.google.javascript.rhino.JSDocInfo;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
+import com.google.javascript.rhino.TypeIRegistry;
 import com.google.javascript.rhino.jstype.JSTypeRegistry;
 
 import java.io.IOException;
@@ -753,12 +754,6 @@ public class Compiler extends AbstractCompiler {
       return;
     }
 
-    if (options.nameAnonymousFunctionsOnly) {
-      // TODO(nicksantos): Move this into an instrument() phase maybe?
-      check();
-      return;
-    }
-
     if (!options.skipAllPasses) {
       check();
       if (hasErrors()) {
@@ -849,11 +844,6 @@ public class Compiler extends AbstractCompiler {
     phaseOptimizer.consume(getPassConfig().getChecks());
     phaseOptimizer.process(externsRoot, jsRoot);
     if (hasErrors()) {
-      return;
-    }
-
-    // TODO(nicksantos): clean this up. The flow here is too hard to follow.
-    if (options.nameAnonymousFunctionsOnly) {
       return;
     }
 
@@ -1207,6 +1197,11 @@ public class Compiler extends AbstractCompiler {
    */
   JSModuleGraph getDegenerateModuleGraph() {
     return moduleGraph == null ? new JSModuleGraph(modules) : moduleGraph;
+  }
+
+  @Override
+  public TypeIRegistry getTypeIRegistry() {
+    return getTypeRegistry();
   }
 
   @Override
@@ -2160,8 +2155,13 @@ public class Compiler extends AbstractCompiler {
           parserConfig = createConfig(Config.LanguageMode.ECMASCRIPT6_STRICT);
           externsParserConfig = parserConfig;
           break;
+        case ECMASCRIPT6_TYPED:
+          parserConfig = createConfig(Config.LanguageMode.ECMASCRIPT6_TYPED);
+          externsParserConfig = parserConfig;
+          break;
         default:
-          throw new IllegalStateException("unexpected language mode");
+          throw new IllegalStateException("unexpected language mode: "
+              + options.getLanguageIn());
       }
     }
     switch (context) {
@@ -2177,7 +2177,6 @@ public class Compiler extends AbstractCompiler {
         isIdeMode(),
         mode,
         acceptConstKeyword(),
-        options.acceptTypeSyntax,
         options.extraAnnotationNames);
   }
 

@@ -851,6 +851,7 @@ public class CodePrinterTest extends TestCase {
         "}\n");
 
     assertPrettyPrint("var a;", "var a;\n");
+    assertPrettyPrint("i--", "i--;\n");
 
     // There must be a space before and after binary operators.
     assertPrettyPrint("var foo = 3+5;",
@@ -965,6 +966,16 @@ public class CodePrinterTest extends TestCase {
         "if (1) {\n" +
         "  alert();\n" +
         "}\n");
+  }
+
+  public void testPrettyPrinter_arrow() throws Exception {
+    languageMode = LanguageMode.ECMASCRIPT6;
+    assertPrettyPrint("(a)=>123;", "(a) => 123;\n");
+  }
+
+  public void testPrettyPrinter_defaultValue() throws Exception {
+    languageMode = LanguageMode.ECMASCRIPT6;
+    assertPrettyPrint("(a=1)=>123;", "(a = 1) => 123;\n");
   }
 
   public void testTypeAnnotations() {
@@ -1508,7 +1519,7 @@ public class CodePrinterTest extends TestCase {
     assertPrintSame("var a={[b](){}}");
     assertPrintSame("var a={[b](){alert(foo)}}");
     assertPrintSame("var a={*[b](){yield\"foo\"}}");
-    assertPrintSame("var a={[b]:(()=>c)}");
+    assertPrintSame("var a={[b]:()=>c}");
 
     assertPrintSame("var a={get [b](){return null}}");
     assertPrintSame("var a={set [b](val){window.b=val}}");
@@ -1928,10 +1939,13 @@ public class CodePrinterTest extends TestCase {
 
   public void testArrowFunction() {
     languageMode = LanguageMode.ECMASCRIPT6;
-    assertPrint("()=>1", "(()=>1)");
-    assertPrint("()=>{}", "(()=>{})");
-    assertPrint("a=>b", "((a)=>b)");
-    assertPrint("(a,b)=>b", "((a,b)=>b)");
+    assertPrintSame("()=>1");
+    assertPrint("(()=>1)", "()=>1");
+    assertPrintSame("()=>{}");
+    assertPrint("a=>b", "(a)=>b");
+    assertPrint("(a=>b)(1)", "((a)=>b)(1)");
+    assertPrintSame("var z={x:(a)=>1}");
+    assertPrint("(a,b)=>b", "(a,b)=>b");
   }
 
   public void testDeclarations() {

@@ -228,11 +228,10 @@ class CodeGenerator {
         break;
 
       case Token.NAME:
-        if (first == null || first.isEmpty()) {
-          addIdentifier(n.getString());
-        } else {
+        addIdentifier(n.getString());
+        maybeAddTypeDecl(n);
+        if (first != null && !first.isEmpty()) {
           Preconditions.checkState(childCount == 1);
-          addIdentifier(n.getString());
           cc.addOp("=", true);
           if (first.isComma()) {
             addExpr(first, NodeUtil.precedence(Token.ASSIGN), Context.OTHER);
@@ -262,7 +261,8 @@ class CodeGenerator {
 
       case Token.DEFAULT_VALUE:
         add(first);
-        add("=");
+        maybeAddTypeDecl(n);
+        cc.addOp("=", true);
         add(first.getNext());
         break;
 
@@ -341,9 +341,12 @@ class CodeGenerator {
         Preconditions.checkState(childCount == 3);
 
         boolean isArrow = n.isArrowFunction();
-        // TODO(johnlenz): properly parenthesize arrow functions
+        // Arrow functions are complete expressions, so don't need parentheses
+        // if they are in an expression result.
+        boolean notSingleExpr = n.getParent() == null
+            || !n.getParent().isExprResult();
         boolean funcNeedsParens = (context == Context.START_OF_EXPR)
-            || isArrow;
+            && (!isArrow || notSingleExpr);
         if (funcNeedsParens) {
           add("(");
         }
@@ -357,9 +360,11 @@ class CodeGenerator {
 
         add(first);
 
-        add(first.getNext());
+        add(first.getNext());  // param list
+
+        maybeAddTypeDecl(n);
         if (isArrow) {
-          add("=>");
+          cc.addOp("=>", true);
         }
         add(last, Context.PRESERVE_BLOCK);
         cc.endFunction(context == Context.STATEMENT);
@@ -1022,12 +1027,59 @@ class CodeGenerator {
         add("`");
         break;
 
+      // Type Declaration ASTs.
+      case Token.STRING_TYPE:
+        add("string");
+        break;
+      case Token.BOOLEAN_TYPE:
+        add("boolean");
+        break;
+      case Token.NUMBER_TYPE:
+        add("number");
+        break;
+      case Token.ANY_TYPE:
+        add("any");
+        break;
+      case Token.VOID_TYPE:
+        add("void");
+        break;
+      case Token.NAMED_TYPE:
+        // Children are a chain of getprop nodes.
+        add(first);
+        break;
+      case Token.ARRAY_TYPE:
+        add(first);
+        add("[");
+        add("]");
+        break;
+
+      case Token.PARAMETERIZED_TYPE:
+        // First child is the type that's parameterized, later children are the arguments.
+        add(first);
+        add("<");
+        for (Node c = first.getNext(); c != null; c = c.getNext()) {
+          add(c);
+          if (c.getNext() != null) {
+            cc.addOp(",", true);
+          }
+        }
+        add(">");
+        break;
+
       default:
         throw new RuntimeException(
             "Unknown type " + Token.name(type) + "\n" + n.toStringTree());
     }
 
     cc.endSourceMapping(n);
+  }
+
+  private void maybeAddTypeDecl(Node n) {
+    if (languageMode == LanguageMode.ECMASCRIPT6_TYPED
+        && n.getJSTypeExpression() != null) {
+      add(": ");
+      add(n.getJSTypeExpression().getRoot());
+    }
   }
 
   /**

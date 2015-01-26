@@ -143,11 +143,6 @@ public class CompilerOptions implements Serializable, Cloneable {
   boolean skipAllPasses;
 
   /**
-   * If true, name anonymous functions only. All others passes will be skipped.
-   */
-  boolean nameAnonymousFunctionsOnly;
-
-  /**
    * Configures the compiler to run expensive sanity checks after
    * every pass. Only intended for internal development.
    */
@@ -700,9 +695,6 @@ public class CompilerOptions implements Serializable, Cloneable {
   /** Move top-level function declarations to the top */
   public boolean moveFunctionDeclarations;
 
-  /** Instrument / Intercept memory allocations. */
-  private boolean instrumentMemoryAllocations;
-
   /** Instrumentation template to use with #recordFunctionInformation */
   public String instrumentationTemplate;
 
@@ -953,7 +945,6 @@ public class CompilerOptions implements Serializable, Cloneable {
     // Checks
     transpileOnly = false;
     skipAllPasses = false;
-    nameAnonymousFunctionsOnly = false;
     devMode = DevMode.OFF;
     checkDeterminism = false;
     checkSymbols = false;
@@ -1072,7 +1063,6 @@ public class CompilerOptions implements Serializable, Cloneable {
 
     // Instrumentation
     instrumentationTemplate = null;  // instrument functions
-    instrumentMemoryAllocations = false; // instrument allocations
     instrumentForCoverage = false;  // instrument lines
 
     // Output
@@ -1441,13 +1431,6 @@ public class CompilerOptions implements Serializable, Cloneable {
 
   public void setRemoveClosureAsserts(boolean remove) {
     this.removeClosureAsserts = remove;
-  }
-
-  /**
-   * If true, name anonymous functions only. All other passes will be skipped.
-   */
-  public void setNameAnonymousFunctionsOnly(boolean value) {
-    this.nameAnonymousFunctionsOnly = value;
   }
 
   public void setColorizeErrorOutput(boolean colorizeErrorOutput) {
@@ -1868,8 +1851,7 @@ public class CompilerOptions implements Serializable, Cloneable {
     this.removeUnusedPrototypeProperties = enabled;
   }
 
-  public void setRemoveUnusedPrototypePropertiesInExterns(
-      boolean enabled) {
+  public void setRemoveUnusedPrototypePropertiesInExterns(boolean enabled) {
     this.removeUnusedPrototypePropertiesInExterns = enabled;
   }
 
@@ -2167,6 +2149,10 @@ public class CompilerOptions implements Serializable, Cloneable {
     this.errorFormat = errorFormat;
   }
 
+  public ErrorFormat getErrorFormat() {
+    return this.errorFormat;
+  }
+
   public void setWarningsGuard(ComposeWarningsGuard warningsGuard) {
     this.warningsGuard = warningsGuard;
   }
@@ -2231,21 +2217,6 @@ public class CompilerOptions implements Serializable, Cloneable {
   }
 
   /**
-   * @return Whether memory allocations are instrumented.
-   */
-  public boolean getInstrumentMemoryAllocations() {
-    return instrumentMemoryAllocations;
-  }
-
-  /**
-   * Sets the option to instrument memory allocations.
-   */
-  public void setInstrumentMemoryAllocations(
-      boolean instrumentMemoryAllocations) {
-    this.instrumentMemoryAllocations = instrumentMemoryAllocations;
-  }
-
-  /**
    * Set whether or not code should be modified to provide coverage
    * information.
    */
@@ -2302,7 +2273,7 @@ public class CompilerOptions implements Serializable, Cloneable {
     ECMASCRIPT6_STRICT,
 
     /**
-     * A superset of ES6 which adds Typescript-style type declarations.
+     * A superset of ES6 which adds Typescript-style type declarations. Always strict.
      */
     ECMASCRIPT6_TYPED,
 
@@ -2317,6 +2288,7 @@ public class CompilerOptions implements Serializable, Cloneable {
       switch (this) {
         case ECMASCRIPT5_STRICT:
         case ECMASCRIPT6_STRICT:
+        case ECMASCRIPT6_TYPED:
           return true;
         default:
           return false;
@@ -2335,6 +2307,7 @@ public class CompilerOptions implements Serializable, Cloneable {
       switch (this) {
         case ECMASCRIPT6:
         case ECMASCRIPT6_STRICT:
+        case ECMASCRIPT6_TYPED:
           return true;
         default:
           return false;

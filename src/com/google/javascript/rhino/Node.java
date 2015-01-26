@@ -127,7 +127,8 @@ public class Node implements Cloneable, Serializable {
                                   // GlobalTypeInfo and NewTypeInference.
                                   // We use this to tag getprop nodes that
                                   // declare properties.
-      COMPUTED_PROP_MEMBER_VARIABLE = 77; // A computed property that has a member variable.
+      JS_TYPE_EXPRESSION = 77;    // Holds JsTypeExpression objects representing type syntax
+                                  // annotations on nodes.
 
 
   public static final int   // flags for INCRDECR_PROP
@@ -177,9 +178,31 @@ public class Node implements Cloneable, Serializable {
         case COMPUTED_PROP_SETTER: return "computed_prop_setter";
         case ANALYZED_DURING_GTI:  return "analyzed_during_gti";
         case CONSTANT_PROPERTY_DEF: return "constant_property_def";
+        case JS_TYPE_EXPRESSION: return "js_type_expression";
         default:
           throw new IllegalStateException("unexpected prop id " + propType);
       }
+  }
+
+  public static class TypeDeclarationNode extends Node {
+
+    private static final long serialVersionUID = 1L;
+
+    public TypeDeclarationNode(int nodeType) {
+      super(nodeType);
+    }
+
+    public TypeDeclarationNode(int nodeType, Node child) {
+      super(nodeType, child);
+    }
+
+    public TypeDeclarationNode(int nodeType, Node left, Node right) {
+      super(nodeType, left, right);
+    }
+
+    public TypeDeclarationNode(int nodeType, Node left, Node mid, Node right) {
+      super(nodeType, left, mid, right);
+    }
   }
 
   private static class NumberNode extends Node {
@@ -208,8 +231,8 @@ public class Node implements Cloneable, Serializable {
 
     @Override
     boolean isEquivalentTo(
-        Node node, boolean compareJsType, boolean recur, boolean jsDoc) {
-      boolean equiv = super.isEquivalentTo(node, compareJsType, recur, jsDoc);
+        Node node, boolean compareType, boolean recur, boolean jsDoc) {
+      boolean equiv = super.isEquivalentTo(node, compareType, recur, jsDoc);
       if (equiv) {
         double thisValue = getDouble();
         double thatValue = ((NumberNode) node).getDouble();
@@ -267,8 +290,8 @@ public class Node implements Cloneable, Serializable {
 
     @Override
     boolean isEquivalentTo(
-        Node node, boolean compareJsType, boolean recur, boolean jsDoc) {
-      return (super.isEquivalentTo(node, compareJsType, recur, jsDoc)
+        Node node, boolean compareType, boolean recur, boolean jsDoc) {
+      return (super.isEquivalentTo(node, compareType, recur, jsDoc)
           && this.str.equals(((StringNode) node).str));
     }
 
@@ -779,7 +802,7 @@ public class Node implements Cloneable, Serializable {
 
   public void replaceChildAfter(Node prevChild, Node newChild) {
     Preconditions.checkArgument(prevChild.parent == this,
-      "prev is not a child of this node.");
+        "prev is not a child of this node.");
 
     Preconditions.checkArgument(newChild.next == null,
         "The new child node has siblings.");
@@ -899,6 +922,18 @@ public class Node implements Cloneable, Serializable {
     if (value != 0) {
       propListHead = createProp(propType, value, propListHead);
     }
+  }
+
+  public void setJsTypeExpression(JSTypeExpression typeExpression) {
+    putProp(JS_TYPE_EXPRESSION, typeExpression);
+  }
+
+  /**
+   * Returns the syntactical type specified on this node. Not to be confused
+   * with {@link #getJSType()} which returns the compiler-inferred type.
+   */
+  public JSTypeExpression getJSTypeExpression() {
+    return (JSTypeExpression) getProp(JS_TYPE_EXPRESSION);
   }
 
   PropListItem createProp(int propType, Object value, PropListItem next) {
@@ -1037,11 +1072,11 @@ public class Node implements Cloneable, Serializable {
     }
 
     if (printType) {
-      if (jsType != null) {
-        String jsTypeString = jsType.toString();
-        if (jsTypeString != null) {
+      if (typei != null) {
+        String typeString = typei.toString();
+        if (typeString != null) {
           sb.append(" : ");
-          sb.append(jsTypeString);
+          sb.append(typeString);
         }
       }
     }
@@ -1125,7 +1160,7 @@ public class Node implements Cloneable, Serializable {
    */
   private int sourcePosition;
 
-  private JSType jsType;
+  private TypeI typei;
 
   private Node parent;
 
@@ -1575,21 +1610,21 @@ public class Node implements Cloneable, Serializable {
   }
 
   /**
-   * @param compareJsType Whether to compare the JSTypes of the nodes.
+   * @param compareType Whether to compare the JSTypes of the nodes.
    * @param recurse Whether to compare the children of the current node, if
    *    not only the the count of the children are compared.
    * @param jsDoc Whether to check that the JsDoc of the nodes are equivalent.
    * @return Whether this node is equivalent semantically to the provided node.
    */
   boolean isEquivalentTo(
-      Node node, boolean compareJsType, boolean recurse, boolean jsDoc) {
+      Node node, boolean compareType, boolean recurse, boolean jsDoc) {
     if (type != node.getType()
         || getChildCount() != node.getChildCount()
         || this.getClass() != node.getClass()) {
       return false;
     }
 
-    if (compareJsType && !JSType.isEquivalent(jsType, node.getJSType())) {
+    if (compareType && !JSType.isEquivalent((JSType) typei, node.getJSType())) {
       return false;
     }
 
@@ -1632,7 +1667,7 @@ public class Node implements Cloneable, Serializable {
       for (n = first, n2 = node.first;
            n != null;
            n = n.next, n2 = n2.next) {
-        if (!n.isEquivalentTo(n2, compareJsType, recurse, jsDoc)) {
+        if (!n.isEquivalentTo(n2, compareType, recurse, jsDoc)) {
           return false;
         }
       }
@@ -1988,12 +2023,25 @@ public class Node implements Cloneable, Serializable {
   //==========================================================================
   // Custom annotations
 
+  /**
+   * Returns the compiled inferred type on this node. Not to be confused
+   * with {@link #getJSTypeExpression()} which returns the syntactically
+   * specified type.
+   */
   public JSType getJSType() {
-      return jsType;
+    return (JSType) typei;
   }
 
   public void setJSType(JSType jsType) {
-      this.jsType = jsType;
+      this.typei = jsType;
+  }
+
+  public TypeI getTypeI() {
+    return typei;
+  }
+
+  public void setTypeI(TypeI type) {
+    this.typei = type;
   }
 
   public FileLevelJsDocBuilder getJsDocBuilderForNode() {

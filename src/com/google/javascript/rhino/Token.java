@@ -192,6 +192,23 @@ public class Token {
                                // with a default value
         MEMBER_VARIABLE_DEF = 179,
 
+        // Used by type declaration ASTs
+        STRING_TYPE        = 200,
+        BOOLEAN_TYPE       = 201,
+        NUMBER_TYPE        = 202,
+        FUNCTION_TYPE      = 203,
+        PARAMETERIZED_TYPE = 204,
+        UNION_TYPE         = 205,
+        ANY_TYPE           = 206,
+        NULL_TYPE          = 208,
+        VOID_TYPE          = 209,
+        REST_PARAMETER_TYPE = 210,
+        NAMED_TYPE         = 211,
+        OPTIONAL_PARAMETER = 212,
+        RECORD_TYPE        = 213,
+        UNDEFINED_TYPE     = 214,
+        ARRAY_TYPE         = 215,
+
         // JSDoc-only tokens
         ANNOTATION     = 300,
         PIPE           = 301,
@@ -315,6 +332,21 @@ public class Token {
           case LB:              return "LB";
           case LC:              return "LC";
           case COLON:           return "COLON";
+          case STRING_TYPE:     return "STRING_TYPE";
+          case ANY_TYPE:        return "ANY_TYPE";
+          case NULL_TYPE:       return "NULL_TYPE";
+          case VOID_TYPE:       return "VOID_TYPE";
+          case BOOLEAN_TYPE:       return "BOOLEAN_TYPE";
+          case NUMBER_TYPE:        return "NUMBER_TYPE";
+          case PARAMETERIZED_TYPE: return "PARAMETERIZED_TYPE";
+          case ARRAY_TYPE:         return "ARRAY_TYPE";
+          case UNION_TYPE:         return "UNION_TYPE";
+          case FUNCTION_TYPE:      return "FUNCTION_TYPE";
+          case REST_PARAMETER_TYPE: return "REST_PARAMETER_TYPE";
+          case NAMED_TYPE:         return "NAMED_TYPE";
+          case OPTIONAL_PARAMETER: return "OPTIONAL_PARAMETER";
+          case RECORD_TYPE:        return "RECORD_TYPE";
+          case UNDEFINED_TYPE:     return "UNDEFINED_TYPE";
 
           case ARRAY_PATTERN:   return "ARRAY_PATTERN";
           case OBJECT_PATTERN:  return "OBJECT_PATTERN";

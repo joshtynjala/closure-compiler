@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 The Closure Compiler Authors.
+ * Copyright 2015 The Closure Compiler Authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.javascript.jscomp.parsing.parser.trees;
 
-import com.google.common.collect.ImmutableList;
 import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 
 /**
- * Parse tree node representing a type name (of the form {@code foo.bar.Baz}) split into segments (
- * {@code [foo, bar, Baz]}).
+ * Represents an array type ({@code foo[]}).
  */
-public class TypeNameTree extends ParseTree {
+public class ArrayTypeTree extends ParseTree {
 
-  public final ImmutableList<String> segments;
+  public final ParseTree elementType;
 
-  public TypeNameTree(SourceRange location, ImmutableList<String> segments) {
-    super(ParseTreeType.TYPE_NAME, location);
-    this.segments = segments;
+  public ArrayTypeTree(SourceRange location, ParseTree elementType) {
+    super(ParseTreeType.ARRAY_TYPE, location);
+    this.elementType = elementType;
   }
 }

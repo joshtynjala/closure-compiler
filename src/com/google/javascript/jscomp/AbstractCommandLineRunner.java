@@ -385,7 +385,6 @@ abstract class AbstractCommandLineRunner<A extends Compiler,
     }
 
     options.acceptConstKeyword = config.acceptConstKeyword;
-    options.acceptTypeSyntax = config.acceptTypeSyntax;
     options.transformAMDToCJSModules = config.transformAMDToCJSModules;
     options.processCommonJSModules = config.processCommonJSModules;
     options.rewriteEs6Modules = config.rewriteEs6Modules;
@@ -394,7 +393,6 @@ abstract class AbstractCommandLineRunner<A extends Compiler,
     options.angularPass = config.angularPass;
     options.tracer = config.tracerMode;
     options.useNewTypeInference = config.useNewTypeInference;
-    options.renamePrefixNamespace = config.renamePrefixNamespace;
   }
 
   protected final A getCompiler() {
@@ -2024,16 +2022,6 @@ abstract class AbstractCommandLineRunner<A extends Compiler,
      */
     CommandLineConfig setAcceptConstKeyword(boolean acceptConstKeyword) {
       this.acceptConstKeyword = acceptConstKeyword;
-      return this;
-    }
-
-    private boolean acceptTypeSyntax = false;
-
-    /**
-     * Sets whether to accept type syntax ({@code var foo: string;}).
-     */
-    CommandLineConfig setAcceptTypeSyntax(boolean acceptTypeSyntax) {
-      this.acceptTypeSyntax = acceptTypeSyntax;
       return this;
     }
 
