@@ -28,6 +28,7 @@ import com.google.javascript.jscomp.parsing.parser.LiteralToken;
 import com.google.javascript.jscomp.parsing.parser.TokenType;
 import com.google.javascript.jscomp.parsing.parser.trees.ArrayLiteralExpressionTree;
 import com.google.javascript.jscomp.parsing.parser.trees.ArrayPatternTree;
+import com.google.javascript.jscomp.parsing.parser.trees.ArrayTypeTree;
 import com.google.javascript.jscomp.parsing.parser.trees.AssignmentRestElementTree;
 import com.google.javascript.jscomp.parsing.parser.trees.BinaryOperatorTree;
 import com.google.javascript.jscomp.parsing.parser.trees.BlockTree;
@@ -2243,6 +2244,11 @@ class NewIRFactory {
       }
       TypeDeclarationNode typeName = (TypeDeclarationNode) process(tree.typeName);
       return TypeDeclarationsIRFactory.parameterizedType(typeName, arguments.build());
+    }
+
+    @Override
+    Node processArrayType(ArrayTypeTree tree) {
+      return TypeDeclarationsIRFactory.arrayType(process(tree.elementType));
     }
 
     private Node transformList(

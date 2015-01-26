@@ -157,9 +157,7 @@ public class TypeSyntaxTest extends TestCase {
 
   public void testArrayType() {
     TypeDeclarationNode arrayOfString =
-        TypeDeclarationsIRFactory.parameterizedType(
-            TypeDeclarationsIRFactory.namedType("Array"),
-            Collections.singleton(TypeDeclarationsIRFactory.stringType()));
+        TypeDeclarationsIRFactory.arrayType(TypeDeclarationsIRFactory.stringType());
     assertVarType("string[]", arrayOfString, "var foo: string[];");
   }
 
@@ -168,11 +166,9 @@ public class TypeSyntaxTest extends TestCase {
     parse("var foo: string[;");
   }
 
-  public void testArrayType_namespaced() {
+  public void testArrayType_qualifiedType() {
     TypeDeclarationNode arrayOfString =
-        TypeDeclarationsIRFactory.parameterizedType(
-            TypeDeclarationsIRFactory.namedType("Array"),
-            Collections.singleton(TypeDeclarationsIRFactory.namedType("mymod.ns.Type")));
+        TypeDeclarationsIRFactory.arrayType(TypeDeclarationsIRFactory.namedType("mymod.ns.Type"));
     assertVarType("string[]", arrayOfString, "var foo: mymod.ns.Type[];");
   }
 
