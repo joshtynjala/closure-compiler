@@ -554,8 +554,8 @@ class CodeGenerator {
             addJsString(n);
           }
         }
-
         add(parameters);
+        maybeAddTypeDecl(fn);
         add(body, Context.PRESERVE_BLOCK);
         break;
       }
