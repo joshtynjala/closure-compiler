@@ -172,16 +172,6 @@ public class TypeSyntaxTest extends TestCase {
     assertVarType("string[]", arrayOfString, "var foo: mymod.ns.Type[];");
   }
 
-  private void assertVarType(String message, Node expectedType, String source) {
-    Node varDecl = parse(source, source).getFirstChild();
-    Node varType = varDecl.getFirstChild().getJSTypeExpression().getRoot();
-    assertEquivalent(message, expectedType, varType);
-  }
-
-  private void assertEquivalent(String message, Node expected, Node actual) {
-    assertTrue(message, expected.isEquivalentTo(actual));
-  }
-
   public void testParameterizedType() {
     TypeDeclarationNode parameterizedType =
         TypeDeclarationsIRFactory.parameterizedType(
@@ -206,6 +196,34 @@ public class TypeSyntaxTest extends TestCase {
   public void testParameterizedType_trailing2() {
     expectErrors("Parse error. Unexpected token ';' in type expression");
     parse("var x: my.parameterized.Type<ns.A,;");
+  }
+
+  public void testMethodType() {
+    Node classDecl =
+        parse("class X {\n  m(p: number): string {\n    return p + x;\n  }\n}").getFirstChild();
+    Node members = classDecl.getChildAtIndex(2);
+    Node method = members.getFirstChild().getFirstChild();
+    Node returnType = method.getJSTypeExpression().getRoot();
+    assertEquivalent("string return type", TypeDeclarationsIRFactory.stringType(), returnType);
+  }
+
+  public void testMemberVariableType() {
+    Node classDecl =
+        parse("class X {\n  m1: string;\n  m2: number;\n}").getFirstChild();
+    Node members = classDecl.getChildAtIndex(2);
+    Node memberVariable = members.getFirstChild().getFirstChild();
+    Node fieldType = memberVariable.getJSTypeExpression().getRoot();
+    assertEquivalent("string field type", TypeDeclarationsIRFactory.stringType(), fieldType);
+  }
+
+  private void assertVarType(String message, Node expectedType, String source) {
+    Node varDecl = parse(source, source).getFirstChild();
+    Node varType = varDecl.getFirstChild().getJSTypeExpression().getRoot();
+    assertEquivalent(message, expectedType, varType);
+  }
+
+  private void assertEquivalent(String message, Node expected, Node actual) {
+    assertTrue(message, expected.isEquivalentTo(actual));
   }
 
   private Node parse(String source) {
