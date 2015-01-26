@@ -16,6 +16,8 @@
 
 package com.google.javascript.jscomp.parsing;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.javascript.jscomp.CodePrinter;
 import com.google.javascript.jscomp.Compiler;
@@ -233,15 +235,14 @@ public class TypeSyntaxTest extends TestCase {
     assertTrue("Missing an error", testErrorManager.hasEncounteredAllErrors());
     assertTrue("Missing a warning", testErrorManager.hasEncounteredAllWarnings());
 
-    // DO NOT SUBMIT temporarily disabled until Alex' printing code is in.
-    if (false && script != null && testErrorManager.getErrorCount() == 0) {
+    if (script != null && testErrorManager.getErrorCount() == 0) {
       // if it can be parsed, it should round trip.
       String actual = new CodePrinter.Builder(script)
           .setCompilerOptions(options)
           .setTypeRegistry(compiler.getTypeRegistry())
           .build()  // does the actual printing.
           .trim();
-      assertEquals(expected, actual);
+      assertThat(actual).isEqualTo(expected);
     }
 
     return script;

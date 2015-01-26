@@ -1,4 +1,21 @@
+/*
+ * Copyright 2015 The Closure Compiler Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.javascript.jscomp.parsing;
+
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -119,8 +136,7 @@ public class TypeDeclarationsIRFactory {
    * RECORD_TYPE
    *   STRING_KEY myNum
    *     NUMBER_TYPE
-   *   STRING_KEY myObject
-   *     UNKNOWN_TYPE
+   *   STRING myObject
    * </pre>
    * @param properties a map from property name to property type
    * @return a new node representing the record type
@@ -129,9 +145,13 @@ public class TypeDeclarationsIRFactory {
       LinkedHashMap<String, TypeDeclarationNode> properties) {
     TypeDeclarationNode node = new TypeDeclarationNode(Token.RECORD_TYPE);
     for (Map.Entry<String, TypeDeclarationNode> property : properties.entrySet()) {
-      Node stringKey = IR.stringKey(property.getKey());
-      stringKey.addChildToFront(property.getValue());
-      node.addChildToBack(stringKey);
+      if (property.getValue() == null) {
+        node.addChildrenToBack(IR.string(property.getKey()));
+      } else {
+        Node stringKey = IR.stringKey(property.getKey());
+        stringKey.addChildToFront(property.getValue());
+        node.addChildToBack(stringKey);
+      }
     }
     return node;
   }
@@ -260,9 +280,10 @@ public class TypeDeclarationsIRFactory {
         }
       };
 
+  @Nullable
   public static TypeDeclarationNode convert(@Nullable JSTypeExpression typeExpr) {
     if (typeExpr == null) {
-      return anyType();
+      return null;
     }
     return convertTypeNodeAST(typeExpr.getRoot());
   }
@@ -283,7 +304,7 @@ public class TypeDeclarationsIRFactory {
             namedType("Object"), numberType(), stringType(),
             booleanType(), nullType(), undefinedType());
       case Token.VOID:
-        return voidType();
+        return undefinedType();
       case Token.EMPTY: // for function types that don't declare a return type
         return anyType();
       case Token.BANG:
@@ -301,9 +322,8 @@ public class TypeDeclarationsIRFactory {
           case "string":
             return stringType();
           case "undefined":
-            return undefinedType();
           case "void":
-            return voidType();
+            return undefinedType();
           default:
             TypeDeclarationNode root = namedType(typeName);
             if (n.getChildCount() > 0 && n.getFirstChild().isBlock()) {
@@ -325,7 +345,7 @@ public class TypeDeclarationsIRFactory {
             fieldName = fieldName.substring(1, fieldName.length() - 1);
           }
           TypeDeclarationNode fieldType = isFieldTypeDeclared
-              ? convertTypeNodeAST(field.getLastChild()) : anyType();
+              ? convertTypeNodeAST(field.getLastChild()) : null;
           properties.put(fieldName, fieldType);
         }
         return recordType(properties);

@@ -249,17 +249,6 @@ public class DefaultPassConfig extends PassConfig {
       checks.add(closureRewriteClass);
     }
 
-    if (options.nameAnonymousFunctionsOnly) {
-      if (options.anonymousFunctionNaming ==
-          AnonymousFunctionNamingPolicy.MAPPED) {
-        checks.add(nameMappedAnonymousFunctions);
-      } else if (options.anonymousFunctionNaming ==
-          AnonymousFunctionNamingPolicy.UNMAPPED) {
-        checks.add(nameUnmappedAnonymousFunctions);
-      }
-      return checks;
-    }
-
     if (options.jqueryPass) {
       checks.add(jqueryAliases);
     }
@@ -722,11 +711,6 @@ public class DefaultPassConfig extends PassConfig {
 
     if (options.instrumentationTemplate != null) {
       passes.add(instrumentFunctions);
-    }
-
-    // Instrument calls to memory allocations
-    if (options.getInstrumentMemoryAllocations()) {
-      passes.add(instrumentMemoryAllocations);
     }
 
     if (options.aggressiveRenaming) {
@@ -2469,15 +2453,6 @@ public class DefaultPassConfig extends PassConfig {
       };
     }
   };
-
-  /** Adds instrumentation for memory allocations. */
-  final PassFactory instrumentMemoryAllocations =
-      new PassFactory("instrumentMemoryAllocations", true) {
-        @Override
-        protected CompilerPass create(final AbstractCompiler compiler) {
-          return new InstrumentMemoryAllocPass(compiler);
-        }
-      };
 
   final PassFactory instrumentForCodeCoverage =
       new PassFactory("instrumentForCodeCoverage", true) {

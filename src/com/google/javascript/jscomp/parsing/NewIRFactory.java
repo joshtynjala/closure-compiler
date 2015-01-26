@@ -2231,7 +2231,6 @@ class NewIRFactory {
 
     private JSTypeExpression convertTypeTree(ParseTree typeTree) {
       maybeWarnTypeSyntax(typeTree);
-
       Node typeExpr = process(typeTree);
       return new JSTypeExpression(typeExpr, sourceName);
     }

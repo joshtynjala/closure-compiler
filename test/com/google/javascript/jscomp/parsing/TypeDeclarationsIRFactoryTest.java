@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 The Closure Compiler Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.javascript.jscomp.parsing;
 
 import static com.google.common.truth.Truth.THROW_ASSERTION_ERROR;
@@ -13,7 +29,6 @@ import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.rec
 import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.stringType;
 import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.undefinedType;
 import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.unionType;
-import static com.google.javascript.rhino.Node.TypeDeclarationNode;
 import static com.google.javascript.rhino.Token.ANY_TYPE;
 import static com.google.javascript.rhino.Token.BOOLEAN_TYPE;
 import static com.google.javascript.rhino.Token.FUNCTION_TYPE;
@@ -25,13 +40,13 @@ import static com.google.javascript.rhino.Token.RECORD_TYPE;
 import static com.google.javascript.rhino.Token.REST_PARAMETER_TYPE;
 import static com.google.javascript.rhino.Token.STRING_TYPE;
 import static com.google.javascript.rhino.Token.UNDEFINED_TYPE;
-import static com.google.javascript.rhino.Token.VOID_TYPE;
 import static java.util.Arrays.asList;
 
 import com.google.common.truth.FailureStrategy;
 import com.google.common.truth.Subject;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.Node;
+import com.google.javascript.rhino.Node.TypeDeclarationNode;
 
 import junit.framework.TestCase;
 
@@ -45,7 +60,7 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     assertParseTypeAndConvert("null").hasType(NULL_TYPE);
     assertParseTypeAndConvert("number").hasType(NUMBER_TYPE);
     assertParseTypeAndConvert("string").hasType(STRING_TYPE);
-    assertParseTypeAndConvert("void").hasType(VOID_TYPE);
+    assertParseTypeAndConvert("void").hasType(UNDEFINED_TYPE);
     assertParseTypeAndConvert("undefined").hasType(UNDEFINED_TYPE);
   }
 
@@ -86,7 +101,7 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
   public void testConvertRecordType() throws Exception {
     LinkedHashMap<String, TypeDeclarationNode> properties = new LinkedHashMap<>();
     properties.put("myNum", numberType());
-    properties.put("myObject", anyType());
+    properties.put("myObject", null);
 
     assertParseTypeAndConvert("{myNum: number, myObject}")
         .isEqualTo(recordType(properties));
@@ -95,25 +110,23 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
   public void testCreateRecordType() throws Exception {
     LinkedHashMap<String, TypeDeclarationNode> properties = new LinkedHashMap<>();
     properties.put("myNum", numberType());
-    properties.put("myObject", anyType());
+    properties.put("myObject", null);
     TypeDeclarationNode node = recordType(properties);
 
-    Node key1 = IR.stringKey("myNum");
-    key1.addChildToFront(new TypeDeclarationNode(NUMBER_TYPE));
-    Node key2 = IR.stringKey("myObject");
-    key2.addChildToFront(new TypeDeclarationNode(ANY_TYPE));
+    Node prop1 = IR.stringKey("myNum");
+    prop1.addChildToFront(new TypeDeclarationNode(NUMBER_TYPE));
+    Node prop2 = IR.string("myObject");
 
     assertNode(node)
-        .isEqualTo(new TypeDeclarationNode(RECORD_TYPE, key1, key2));
+        .isEqualTo(new TypeDeclarationNode(RECORD_TYPE, prop1, prop2));
   }
 
   public void testConvertRecordTypeWithTypeApplication() throws Exception {
-    Node key = IR.stringKey("length");
-    key.addChildToFront(anyType());
+    Node prop1 = IR.string("length");
     assertParseTypeAndConvert("Array.<{length}>")
         .isEqualTo(new TypeDeclarationNode(PARAMETERIZED_TYPE,
             namedType("Array"),
-            new TypeDeclarationNode(RECORD_TYPE, key)));
+            new TypeDeclarationNode(RECORD_TYPE, prop1)));
   }
 
   public void testConvertNullableType() throws Exception {
