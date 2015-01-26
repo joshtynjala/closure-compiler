@@ -212,11 +212,11 @@ public class TypeSyntaxTest extends TestCase {
     parse("class Foo {\n  foo = 12;\n}");
   }
 
-  public void testMemberVariableType() {
+  public void testMemberVariable_type() {
     Node classDecl =
         parse("class X {\n  m1: string;\n  m2: number;\n}").getFirstChild();
     Node members = classDecl.getChildAtIndex(2);
-    Node memberVariable = members.getFirstChild().getFirstChild();
+    Node memberVariable = members.getFirstChild();
     Node fieldType = memberVariable.getJSTypeExpression().getRoot();
     assertEquivalent("string field type", TypeDeclarationsIRFactory.stringType(), fieldType);
   }
