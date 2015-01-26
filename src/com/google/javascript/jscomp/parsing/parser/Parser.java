@@ -100,6 +100,7 @@ public class Parser {
       ES5_STRICT,
       ES6,
       ES6_STRICT,
+      ES6_TYPED,
     }
 
     public final boolean atLeast6;
@@ -110,9 +111,11 @@ public class Parser {
     public final boolean warnES6NumberLiteral;
 
     public Config(Mode mode) {
-      atLeast6 = mode == Mode.ES6 || mode == Mode.ES6_STRICT;
+      atLeast6 = mode == Mode.ES6 || mode == Mode.ES6_STRICT
+          || mode == Mode.ES6_TYPED;
       atLeast5 = atLeast6 || mode == Mode.ES5 || mode == Mode.ES5_STRICT;
-      this.isStrictMode = mode == Mode.ES5_STRICT || mode == Mode.ES6_STRICT;
+      this.isStrictMode = mode == Mode.ES5_STRICT || mode == Mode.ES6_STRICT
+          || mode == Mode.ES6_TYPED;
 
       // Generally, we allow everything that is valid in any mode
       // we only warn about things that are not represented in the AST.
@@ -686,8 +689,48 @@ public class Parser {
   private ParseTree parseTypeAnnotation() {
     SourcePosition start = getTreeStartLocation();
     eat(TokenType.COLON);
-    IdentifierToken token = eatIdOrKeywordAsId();
-    return new IdentifierExpressionTree(getTreeLocation(start), token);
+
+    if (peekId() || peek(TokenType.VOID)) {
+      // PredefinedType or TypeReference
+      ParseTree typeReference = parseTypeReference();
+
+      if (!peekImplicitSemiColon() && peek(TokenType.OPEN_SQUARE)) {
+        // ArrayType
+        eat(TokenType.OPEN_SQUARE);
+        eat(TokenType.CLOSE_SQUARE);
+        SourceRange location = getTreeLocation(typeReference.location.start);
+        // Represented as Array<TypeReference>
+        TypeNameTree arrayType = new TypeNameTree(location, ImmutableList.of("Array"));
+        typeReference =
+            new ParameterizedTypeTree(location, arrayType, ImmutableList.of(typeReference));
+      }
+      return typeReference;
+    }
+    reportError("Unexpected token '%s' in type expression", peekType());
+    return new TypeNameTree(getTreeLocation(start), ImmutableList.of("error"));
+  }
+
+  private ParseTree parseTypeReference() {
+    return parseTypeName();
+    // TODO(martinprobst): TypeArguments.
+  }
+
+  private ParseTree parseTypeName() {
+    SourcePosition start = getTreeStartLocation();
+    IdentifierToken token = eatIdOrKeywordAsId();  // for 'void'.
+
+    ImmutableList.Builder<String> identifiers = ImmutableList.builder();
+    identifiers.add(token != null ? token.value : "");  // null if errors while parsing
+    while (peek(TokenType.PERIOD)) {
+      // ModuleName . Identifier
+      eat(TokenType.PERIOD);
+      token = eatId();
+      if (token == null) {
+        break;
+      }
+      identifiers.add(token.value);
+    }
+    return new TypeNameTree(getTreeLocation(start), identifiers.build());
   }
 
   private BlockTree parseFunctionBody() {

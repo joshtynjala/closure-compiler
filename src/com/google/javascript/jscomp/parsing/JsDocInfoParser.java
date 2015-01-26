@@ -197,7 +197,6 @@ public final class JsDocInfoParser {
         Sets.<String>newHashSet(),
         false,
         LanguageMode.ECMASCRIPT3,
-        false,
         false);
     JsDocInfoParser parser = new JsDocInfoParser(
         new JsDocTokenStream(typeString),
@@ -2007,6 +2006,7 @@ public final class JsDocInfoParser {
       // We use look-ahead 1 to determine whether it's unknown. Otherwise,
       // we assume it means nullable. There are 8 cases:
       // {?} - right curly
+      // ? - EOF (possible when the parseTypeString method is given a bare type expression)
       // {?=} - equals
       // {function(?, number)} - comma
       // {function(number, ?)} - right paren
@@ -2023,7 +2023,8 @@ public final class JsDocInfoParser {
           || token == JsDocToken.RIGHT_PAREN
           || token == JsDocToken.PIPE
           || token == JsDocToken.RIGHT_ANGLE
-          || token == JsDocToken.EOC) {
+          || token == JsDocToken.EOC
+          || token == JsDocToken.EOF) {
         restoreLookAhead(token);
         return newNode(Token.QMARK);
       }

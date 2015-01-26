@@ -123,7 +123,9 @@ public class ParseTree {
   public ThisExpressionTree asThisExpression() { return (ThisExpressionTree) this; }
   public ThrowStatementTree asThrowStatement() { return (ThrowStatementTree) this; }
   public TryStatementTree asTryStatement() { return (TryStatementTree) this; }
+  public TypeNameTree asTypeName() { return (TypeNameTree) this; }
   public TypedParameterTree asTypedParameter() { return (TypedParameterTree) this; }
+  public ParameterizedTypeTree asParameterizedType() { return (ParameterizedTypeTree) this; }
   public UnaryExpressionTree asUnaryExpression() { return (UnaryExpressionTree) this; }
   public VariableDeclarationListTree asVariableDeclarationList() {
     return (VariableDeclarationListTree) this; }

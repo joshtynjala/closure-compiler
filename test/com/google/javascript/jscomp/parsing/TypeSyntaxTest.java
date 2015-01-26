@@ -16,106 +16,208 @@
 
 package com.google.javascript.jscomp.parsing;
 
-import com.google.javascript.jscomp.parsing.Config.LanguageMode;
-import com.google.javascript.rhino.JSDocInfo;
+import static com.google.common.truth.Truth.assertThat;
+
+import com.google.common.collect.ImmutableList;
+import com.google.javascript.jscomp.CodePrinter;
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
+import com.google.javascript.jscomp.SourceFile;
+import com.google.javascript.jscomp.testing.TestErrorManager;
 import com.google.javascript.rhino.Node;
-import com.google.javascript.rhino.jstype.SimpleSourceFile;
-import com.google.javascript.rhino.jstype.StaticSourceFile;
-import com.google.javascript.rhino.testing.BaseJSTypeTestCase;
-import com.google.javascript.rhino.testing.TestErrorReporter;
+import com.google.javascript.rhino.Node.TypeDeclarationNode;
 
-public class TypeSyntaxTest extends BaseJSTypeTestCase {
+import junit.framework.TestCase;
 
-  private TestErrorReporter testErrorReporter;
+import java.util.Collections;
+
+public class TypeSyntaxTest extends TestCase {
+
+  private TestErrorManager testErrorManager;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    testErrorReporter = new TestErrorReporter(null, null);
+    testErrorManager = new TestErrorManager();
   }
 
   private void expectErrors(String... errors) {
-    testErrorReporter.setErrors(errors);
+    testErrorManager.expectErrors(errors);
   }
 
   private void expectWarnings(String... warnings) {
-    testErrorReporter.setWarnings(warnings);
+    testErrorManager.expectWarnings(warnings);
   }
 
   public void testVariableDeclaration() {
-    Node varDecl = parse("var foo: string = 'hello';").getFirstChild();
-    assertTypeEquals(STRING_TYPE, varDecl.getFirstChild().getJSDocInfo().getType());
+    assertVarType("any", TypeDeclarationsIRFactory.anyType(),
+        "var foo: any = 'hello';");
+    assertVarType("number", TypeDeclarationsIRFactory.numberType(),
+        "var foo: number = 'hello';");
+    assertVarType("boolean", TypeDeclarationsIRFactory.booleanType(),
+        "var foo: boolean = 'hello';");
+    assertVarType("string", TypeDeclarationsIRFactory.stringType(),
+        "var foo: string = 'hello';");
+    assertVarType("void", TypeDeclarationsIRFactory.voidType(),
+        "var foo: void = 'hello';");
+    assertVarType("named type", TypeDeclarationsIRFactory.namedType("hello"),
+        "var foo: hello = 'hello';");
+  }
+
+  public void testVariableDeclaration_keyword() {
+    expectErrors("Parse error. Unexpected token 'catch' in type expression");
+    parse("var foo: catch;");
+    expectErrors("Parse error. Unexpected token 'implements' in type expression");
+    parse("var foo: implements;"); // strict mode keyword
   }
 
   public void testVariableDeclaration_errorIncomplete() {
-    expectErrors("'identifier' expected");
+    expectErrors("Parse error. Unexpected token '=' in type expression");
     parse("var foo: = 'hello';");
   }
 
   public void testTypeInDocAndSyntax() {
-    expectErrors("Bad type annotation - can only have JSDoc or inline type annotations, not both");
-    Node varDecl = parse("var /** string */ foo: string = 'hello';").getFirstChild();
-    assertTypeEquals(STRING_TYPE, varDecl.getFirstChild().getJSDocInfo().getType());
+    expectErrors("Parse error. Bad type syntax - "
+        + "can only have JSDoc or inline type annotations, not both");
+    parse("var /** string */ foo: string = 'hello';");
   }
 
   public void testFunctionParamDeclaration() {
-    Node fn = parse("function foo(x: string) {}").getFirstChild();
-    JSDocInfo paramInfo = fn.getFirstChild().getNext().getFirstChild().getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, paramInfo.getType());
+    Node fn = parse("function foo(x: string) {\n}").getFirstChild();
+    Node paramType = fn.getFirstChild().getNext().getFirstChild().getJSTypeExpression().getRoot();
+    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), paramType);
   }
 
   public void testFunctionParamDeclaration_defaultValue() {
-    Node fn = parse("function foo(x: string = 'hello') {}").getFirstChild();
-    JSDocInfo paramInfo = fn.getFirstChild().getNext().getFirstChild().getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, paramInfo.getType());
+    Node fn = parse("function foo(x: string = 'hello') {\n}").getFirstChild();
+    Node paramType = fn.getFirstChild().getNext().getFirstChild().getJSTypeExpression().getRoot();
+    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), paramType);
   }
 
   public void testFunctionParamDeclaration_destructuringArray() {
     // TODO(martinprobst): implement.
-    expectErrors("',' expected");
+    expectErrors("Parse error. ',' expected");
     parse("function foo([x]: string) {}");
   }
 
   public void testFunctionParamDeclaration_destructuringArrayInner() {
     // TODO(martinprobst): implement.
-    expectErrors("']' expected");
+    expectErrors("Parse error. ']' expected");
     parse("function foo([x: string]) {}");
   }
 
   public void testFunctionParamDeclaration_destructuringObject() {
     // TODO(martinprobst): implement.
-    expectErrors("',' expected");
+    expectErrors("Parse error. ',' expected");
     parse("function foo({x}: string) {}");
   }
 
   public void testFunctionParamDeclaration_arrow() {
     Node fn = parse("(x: string) => 'hello' + x;").getFirstChild().getFirstChild();
-    JSDocInfo paramInfo = fn.getFirstChild().getNext().getFirstChild().getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, paramInfo.getType());
+    Node paramType = fn.getFirstChild().getNext().getFirstChild().getJSTypeExpression().getRoot();
+    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), paramType);
   }
 
   public void testFunctionReturn() {
-    Node fn = parse("function foo(): string { return 'hello'; }").getFirstChild();
-    JSDocInfo fnDocInfo = fn.getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, fnDocInfo.getReturnType());
+    Node fn = parse("function foo(): string {\n  return'hello';\n}").getFirstChild();
+    Node fnType = fn.getJSTypeExpression().getRoot();
+    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), fnType);
   }
 
   public void testFunctionReturn_arrow() {
     Node fn = parse("(): string => 'hello';").getFirstChild().getFirstChild();
-    JSDocInfo fnDocInfo = fn.getJSDocInfo();
-    assertTypeEquals(STRING_TYPE, fnDocInfo.getReturnType());
+    Node fnType = fn.getJSTypeExpression().getRoot();
+    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), fnType);
   }
 
-  private Node parse(String string) {
-    StaticSourceFile file = new SimpleSourceFile("input", false);
-    Node script = ParserRunner.parse(file,
-        string,
-        ParserRunner.createConfig(false, LanguageMode.ECMASCRIPT6_STRICT, false, true, null),
-        testErrorReporter).ast;
+  public void testFunctionReturn_typeInDocAndSyntax() throws Exception {
+    expectErrors("Parse error. Bad type syntax - "
+        + "can only have JSDoc or inline type annotations, not both");
+    parse("function /** string */ foo(): string { return 'hello'; }");
+  }
 
-    // verifying that all warnings were seen
-    assertTrue(testErrorReporter.hasEncounteredAllErrors());
-    assertTrue(testErrorReporter.hasEncounteredAllWarnings());
+  public void testFunctionReturn_typeInJsdocOnly() throws Exception {
+    parse("function /** string */ foo() { return 'hello'; }",
+        "function/** string */foo() {\n  return'hello';\n}");
+  }
+
+  public void testCompositeType() {
+    Node varDecl = parse("var foo: mymod.ns.Type;").getFirstChild();
+    Node type = varDecl.getFirstChild().getJSTypeExpression().getRoot();
+    TypeDeclarationNode expected =
+        TypeDeclarationsIRFactory.namedType(ImmutableList.of("mymod", "ns", "Type"));
+    assertEquivalent("mymod.ns.Type", expected, type);
+  }
+
+  public void testCompositeType_trailingDot() {
+    expectErrors("Parse error. 'identifier' expected");
+    parse("var foo: mymod.Type.;");
+  }
+
+  public void testArrayType() {
+    TypeDeclarationNode arrayOfString =
+        TypeDeclarationsIRFactory.parameterizedType(
+            TypeDeclarationsIRFactory.namedType("Array"),
+            Collections.singleton(TypeDeclarationsIRFactory.stringType()));
+    assertVarType("string[]", arrayOfString, "var foo: string[];");
+  }
+
+  public void testArrayType_missingClose() {
+    expectErrors("Parse error. ']' expected");
+    parse("var foo: string[;");
+  }
+
+  public void testArrayType_namespaced() {
+    TypeDeclarationNode arrayOfString =
+        TypeDeclarationsIRFactory.parameterizedType(
+            TypeDeclarationsIRFactory.namedType("Array"),
+            Collections.singleton(TypeDeclarationsIRFactory.namedType("mymod.ns.Type")));
+    assertVarType("string[]", arrayOfString, "var foo: mymod.ns.Type[];");
+  }
+
+  private void assertVarType(String message, Node expectedType, String source) {
+    Node varDecl = parse(source, source).getFirstChild();
+    Node varType = varDecl.getFirstChild().getJSTypeExpression().getRoot();
+    assertEquivalent(message, expectedType, varType);
+  }
+
+  private void assertEquivalent(String message, Node expected, Node actual) {
+    assertTrue(message, expected.isEquivalentTo(actual));
+  }
+
+  private Node parse(String source) {
+    return parse(source, source);
+  }
+
+  private Node parse(String source, String expected) {
+    CompilerOptions options = new CompilerOptions();
+    options.setLanguageIn(LanguageMode.ECMASCRIPT6_TYPED);
+    options.setLanguageOut(LanguageMode.ECMASCRIPT6_TYPED);
+    options.setPreserveTypeAnnotations(true);
+    options.setPrettyPrint(true);
+    options.setLineLengthThreshold(80);
+    options.setPreferSingleQuotes(true);
+
+    Compiler compiler = new Compiler();
+    compiler.setErrorManager(testErrorManager);
+    compiler.initOptions(options);
+
+    Node script = compiler.parse(SourceFile.fromCode("[test]", source));
+
+    // Verifying that all warnings were seen
+    assertTrue("Missing an error", testErrorManager.hasEncounteredAllErrors());
+    assertTrue("Missing a warning", testErrorManager.hasEncounteredAllWarnings());
+
+    if (script != null && testErrorManager.getErrorCount() == 0) {
+      // if it can be parsed, it should round trip.
+      String actual = new CodePrinter.Builder(script)
+          .setCompilerOptions(options)
+          .setTypeRegistry(compiler.getTypeRegistry())
+          .build()  // does the actual printing.
+          .trim();
+      assertThat(actual).isEqualTo(expected);
+    }
 
     return script;
   }
