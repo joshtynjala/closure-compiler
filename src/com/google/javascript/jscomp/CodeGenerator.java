@@ -490,28 +490,24 @@ class CodeGenerator {
         cc.beginBlock();
         for (Node c = first; c != null; c = c.getNext()) {
           add(c);
-          cc.maybeLineBreak();
+          cc.endLine();
         }
         cc.endBlock(false);
         break;
 
       case Token.GETTER_DEF:
       case Token.SETTER_DEF:
-      case Token.MEMBER_FUNCTION_DEF: {
+      case Token.MEMBER_FUNCTION_DEF:
+      case Token.MEMBER_VARIABLE_DEF: {
         n.getParent().toStringTree();
         Preconditions.checkState(n.getParent().isObjectLit()
             || n.getParent().isClassMembers());
-        Preconditions.checkState(childCount == 1);
-        Preconditions.checkState(first.isFunction());
-
-        // The function referenced by the definition should always be unnamed.
-        Preconditions.checkState(first.getFirstChild().getString().isEmpty());
 
         if (n.isStaticMember()) {
           add("static ");
         }
 
-        if (n.getFirstChild().isGeneratorFunction()) {
+        if (!n.isMemberVariableDef() && n.getFirstChild().isGeneratorFunction()) {
           Preconditions.checkState(type == Token.MEMBER_FUNCTION_DEF);
           add("*");
         }
@@ -528,35 +524,48 @@ class CodeGenerator {
             add("set ");
             break;
           case Token.MEMBER_FUNCTION_DEF:
+          case Token.MEMBER_VARIABLE_DEF:
             // nothing to do.
             break;
         }
 
         // The name is on the GET or SET node.
         String name = n.getString();
-        Node fn = first;
-        Node parameters = fn.getChildAtIndex(1);
-        Node body = fn.getLastChild();
-
-        // Add the property name.
-        if (!n.isQuotedString() &&
-            TokenStream.isJSIdentifier(name) &&
-            // do not encode literally any non-literal characters that were
-            // Unicode escaped.
-            NodeUtil.isLatin(name)) {
-          add(name);
+        if (n.isMemberVariableDef()) {
+          add(n.getString());
+          maybeAddTypeDecl(n);
+          add(";");
         } else {
-          // Determine if the string is a simple number.
-          double d = getSimpleNumber(name);
-          if (!Double.isNaN(d)) {
-            cc.addNumber(d);
+          Preconditions.checkState(childCount == 1);
+          Preconditions.checkState(first.isFunction());
+
+          // The function referenced by the definition should always be unnamed.
+          Preconditions.checkState(first.getFirstChild().getString().isEmpty());
+
+          Node fn = first;
+          Node parameters = fn.getChildAtIndex(1);
+          Node body = fn.getLastChild();
+
+          // Add the property name.
+          if (!n.isQuotedString() &&
+              TokenStream.isJSIdentifier(name) &&
+              // do not encode literally any non-literal characters that were
+              // Unicode escaped.
+              NodeUtil.isLatin(name)) {
+            add(name);
           } else {
-            addJsString(n);
+            // Determine if the string is a simple number.
+            double d = getSimpleNumber(name);
+            if (!Double.isNaN(d)) {
+              cc.addNumber(d);
+            } else {
+              addJsString(n);
+            }
           }
+          add(parameters);
+          maybeAddTypeDecl(fn);
+          add(body, Context.PRESERVE_BLOCK);
         }
-        add(parameters);
-        maybeAddTypeDecl(fn);
-        add(body, Context.PRESERVE_BLOCK);
         break;
       }
 
@@ -956,8 +965,16 @@ class CodeGenerator {
           add(params);
           add(body, Context.PRESERVE_BLOCK);
         } else {
-          add(":");
-          add(first.getNext());
+          boolean isInClass = n.getParent().getType() == Token.CLASS_MEMBERS;
+          if (first.getNext() != null) {
+            add(isInClass ? ":" : "=");  // Object literal value or member variable initializer.
+            add(first.getNext());
+          } else {
+            Preconditions.checkState(n.getBooleanProp(Node.COMPUTED_PROP_VARIABLE));
+          }
+          if (isInClass) {
+            add(";");
+          }
         }
         break;
 

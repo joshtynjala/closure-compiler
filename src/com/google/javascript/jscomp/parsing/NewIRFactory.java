@@ -1607,7 +1607,7 @@ class NewIRFactory {
 
       Node n = newNode(Token.COMPUTED_PROP, transform(tree.property));
       maybeProcessType(n, tree.declaredType);
-      n.putBooleanProp(Node.COMPUTED_PROP_MEMBER_VARIABLE, true);
+      n.putBooleanProp(Node.COMPUTED_PROP_VARIABLE, true);
       return n;
     }
 

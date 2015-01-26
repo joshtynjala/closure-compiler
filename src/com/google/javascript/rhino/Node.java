@@ -127,8 +127,9 @@ public class Node implements Cloneable, Serializable {
                                   // GlobalTypeInfo and NewTypeInference.
                                   // We use this to tag getprop nodes that
                                   // declare properties.
-      JS_TYPE_EXPRESSION = 77;    // Holds JsTypeExpression objects representing type syntax
+      JS_TYPE_EXPRESSION = 77,    // Holds JsTypeExpression objects representing type syntax
                                   // annotations on nodes.
+      COMPUTED_PROP_VARIABLE = 78; // A computed property that's a variable, e.g. [prop];
 
 
   public static final int   // flags for INCRDECR_PROP
@@ -2694,6 +2695,10 @@ public class Node implements Cloneable, Serializable {
 
   public boolean isMemberFunctionDef() {
     return this.getType() == Token.MEMBER_FUNCTION_DEF;
+  }
+
+  public boolean isMemberVariableDef() {
+    return this.getType() == Token.MEMBER_VARIABLE_DEF;
   }
 
   public boolean isName() {

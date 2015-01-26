@@ -190,7 +190,7 @@ public class Token {
 
         DEFAULT_VALUE   = 178, // Formal parameter or destructuring element
                                // with a default value
-        MEMBER_VARIABLE_DEF = 179,
+        MEMBER_VARIABLE_DEF     = 179,
 
         // Used by type declaration ASTs
         STRING_TYPE        = 200,

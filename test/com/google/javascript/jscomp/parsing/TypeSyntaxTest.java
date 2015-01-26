@@ -199,17 +199,17 @@ public class TypeSyntaxTest extends TestCase {
   }
 
   public void testMemberVariable() throws Exception {
-    parse("class Foo { foo; }");
+    parse("class Foo {\n  foo;\n}");
   }
 
   public void testComputedPropertyMemberVariable() throws Exception {
-    parse("class Foo { ['foo']; }");
+    parse("class Foo {\n  ['foo'];\n}");
   }
 
   public void testMemberVariable_initialiser() throws Exception {
     // TODO(martinprobst): Implement.
-    expectErrors("';' expected");
-    parse("class Foo { foo = 12; }");
+    expectErrors("Parse error. ';' expected");
+    parse("class Foo {\n  foo = 12;\n}");
   }
 
   public void testMemberVariableType() {
@@ -223,7 +223,7 @@ public class TypeSyntaxTest extends TestCase {
 
   public void testMemberVariable_typeInitialiser() throws Exception {
     // TODO(martinprobst): Implement.
-    expectErrors("';' expected");
+    expectErrors("Parse error. ';' expected");
     parse("class Foo { foo: number = 12; }");
   }
 
