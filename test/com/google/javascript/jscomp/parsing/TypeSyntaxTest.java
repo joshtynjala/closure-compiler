@@ -157,9 +157,7 @@ public class TypeSyntaxTest extends TestCase {
 
   public void testArrayType() {
     TypeDeclarationNode arrayOfString =
-        TypeDeclarationsIRFactory.parameterizedType(
-            TypeDeclarationsIRFactory.namedType("Array"),
-            Collections.singleton(TypeDeclarationsIRFactory.stringType()));
+        TypeDeclarationsIRFactory.arrayType(TypeDeclarationsIRFactory.stringType());
     assertVarType("string[]", arrayOfString, "var foo: string[];");
   }
 
@@ -168,11 +166,9 @@ public class TypeSyntaxTest extends TestCase {
     parse("var foo: string[;");
   }
 
-  public void testArrayType_namespaced() {
+  public void testArrayType_qualifiedType() {
     TypeDeclarationNode arrayOfString =
-        TypeDeclarationsIRFactory.parameterizedType(
-            TypeDeclarationsIRFactory.namedType("Array"),
-            Collections.singleton(TypeDeclarationsIRFactory.namedType("mymod.ns.Type")));
+        TypeDeclarationsIRFactory.arrayType(TypeDeclarationsIRFactory.namedType("mymod.ns.Type"));
     assertVarType("string[]", arrayOfString, "var foo: mymod.ns.Type[];");
   }
 
@@ -184,6 +180,32 @@ public class TypeSyntaxTest extends TestCase {
 
   private void assertEquivalent(String message, Node expected, Node actual) {
     assertTrue(message, expected.isEquivalentTo(actual));
+  }
+
+  public void testParameterizedType() {
+    TypeDeclarationNode parameterizedType =
+        TypeDeclarationsIRFactory.parameterizedType(
+            TypeDeclarationsIRFactory.namedType("my.parameterized.Type"),
+            ImmutableList.of(
+                TypeDeclarationsIRFactory.namedType("ns.A"),
+                TypeDeclarationsIRFactory.namedType("ns.B")));
+    assertVarType("parameterized type 2 args", parameterizedType,
+        "var x: my.parameterized.Type<ns.A, ns.B>;");
+  }
+
+  public void testParameterizedType_empty() {
+    expectErrors("Parse error. Unexpected token '>' in type expression");
+    parse("var x: my.parameterized.Type<ns.A, >;");
+  }
+
+  public void testParameterizedType_trailing1() {
+    expectErrors("Parse error. '>' expected");
+    parse("var x: my.parameterized.Type<ns.A;");
+  }
+
+  public void testParameterizedType_trailing2() {
+    expectErrors("Parse error. Unexpected token ';' in type expression");
+    parse("var x: my.parameterized.Type<ns.A,;");
   }
 
   private Node parse(String source) {

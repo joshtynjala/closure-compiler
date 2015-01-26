@@ -1027,6 +1027,45 @@ class CodeGenerator {
         add("`");
         break;
 
+      // Type Declaration ASTs.
+      case Token.STRING_TYPE:
+        add("string");
+        break;
+      case Token.BOOLEAN_TYPE:
+        add("boolean");
+        break;
+      case Token.NUMBER_TYPE:
+        add("number");
+        break;
+      case Token.ANY_TYPE:
+        add("any");
+        break;
+      case Token.VOID_TYPE:
+        add("void");
+        break;
+      case Token.NAMED_TYPE:
+        // Children are a chain of getprop nodes.
+        add(first);
+        break;
+      case Token.ARRAY_TYPE:
+        add(first);
+        add("[");
+        add("]");
+        break;
+
+      case Token.PARAMETERIZED_TYPE:
+        // First child is the type that's parameterized, later children are the arguments.
+        add(first);
+        add("<");
+        for (Node c = first.getNext(); c != null; c = c.getNext()) {
+          add(c);
+          if (c.getNext() != null) {
+            cc.addOp(",", true);
+          }
+        }
+        add(">");
+        break;
+
       default:
         throw new RuntimeException(
             "Unknown type " + Token.name(type) + "\n" + n.toStringTree());
