@@ -99,5 +99,4 @@ public enum ParseTreeType {
   TYPE_NAME,
   TYPE_ANNOTATION,
   PARAMETERIZED_TYPE_TREE,
-  ARRAY_TYPE,
 }

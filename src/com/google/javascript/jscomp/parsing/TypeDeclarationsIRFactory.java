@@ -173,6 +173,7 @@ public class TypeDeclarationsIRFactory {
    * </pre>
    * @param returnType the type returned by the function, possibly UNKNOWN_TYPE
    * @param parameters the types of the parameters.
+   * @return
    */
   public static TypeDeclarationNode functionType(
       Node returnType, LinkedHashMap<String, TypeDeclarationNode> parameters) {
@@ -199,6 +200,7 @@ public class TypeDeclarationsIRFactory {
    * </pre>
    * @param baseType
    * @param typeParameters
+   * @return
    */
   public static TypeDeclarationNode parameterizedType(
       TypeDeclarationNode baseType, Iterable<TypeDeclarationNode> typeParameters) {
@@ -207,21 +209,6 @@ public class TypeDeclarationsIRFactory {
       node.addChildToBack(typeParameter);
     }
     return node;
-  }
-
-  /**
-   * Represents an array type. In Closure, this is represented by a
-   * {@link #parameterizedType(TypeDeclarationNode, Iterable) parameterized type} of {@code Array}
-   * with {@code elementType} as the sole type parameter.
-   *
-   * <p>Example
-   * <pre>
-   * ARRAY_TYPE
-   *   elementType
-   * </pre>
-   */
-  public static TypeDeclarationNode arrayType(Node elementType) {
-    return new TypeDeclarationNode(Token.ARRAY_TYPE, elementType);
   }
 
   /**

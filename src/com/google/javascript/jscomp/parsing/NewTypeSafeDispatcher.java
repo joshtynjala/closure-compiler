@@ -104,7 +104,6 @@ abstract class NewTypeSafeDispatcher<T> {
   abstract T processTypeName(TypeNameTree tree);
   abstract T processTypedParameter(TypedParameterTree asTypeAnnotation);
   abstract T processParameterizedType(ParameterizedTypeTree tree);
-  abstract T processArrayType(ArrayTypeTree tree);
 
   abstract T processMissingExpression(MissingPrimaryExpressionTree tree);
 
@@ -296,8 +295,6 @@ abstract class NewTypeSafeDispatcher<T> {
         return processTypedParameter(node.asTypedParameter());
       case PARAMETERIZED_TYPE_TREE:
         return processParameterizedType(node.asParameterizedType());
-      case ARRAY_TYPE:
-        return processArrayType(node.asArrayType());
 
       default:
         break;
