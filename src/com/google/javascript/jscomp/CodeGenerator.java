@@ -1056,6 +1056,19 @@ class CodeGenerator {
         add("]");
         break;
 
+      case Token.PARAMETERIZED_TYPE:
+        // First child is the type that's parameterized, later children are the arguments.
+        add(first);
+        add("<");
+        for (Node c = first.getNext(); c != null; c = c.getNext()) {
+          add(c);
+          if (c.getNext() != null) {
+            cc.addOp(",", true);
+          }
+        }
+        add(">");
+        break;
+
       default:
         throw new RuntimeException(
             "Unknown type " + Token.name(type) + "\n" + n.toStringTree());
