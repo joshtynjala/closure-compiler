@@ -698,11 +698,8 @@ public class Parser {
         // ArrayType
         eat(TokenType.OPEN_SQUARE);
         eat(TokenType.CLOSE_SQUARE);
-        SourceRange location = getTreeLocation(typeReference.location.start);
-        // Represented as Array<TypeReference>
-        TypeNameTree arrayType = new TypeNameTree(location, ImmutableList.of("Array"));
         typeReference =
-            new ParameterizedTypeTree(location, arrayType, ImmutableList.of(typeReference));
+            new ArrayTypeTree(getTreeLocation(typeReference.location.start), typeReference);
       }
       return typeReference;
     }
