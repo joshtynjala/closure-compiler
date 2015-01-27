@@ -110,7 +110,6 @@ import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 import com.google.javascript.rhino.ErrorReporter;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.JSDocInfo;
-import com.google.javascript.rhino.JSTypeExpression;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Node.TypeDeclarationNode;
 import com.google.javascript.rhino.Token;
@@ -1344,8 +1343,7 @@ class NewIRFactory {
 
       if (functionTree.returnType != null) {
         recordJsDoc(functionTree.returnType.location, node.getJSDocInfo());
-        JSTypeExpression returnType = convertTypeTree(functionTree.returnType);
-        node.setJsTypeExpression(returnType);
+        node.setDeclaredTypeExpression(convertTypeTree(functionTree.returnType));
       }
 
       Node bodyNode = transform(functionTree.functionBody);
@@ -2227,14 +2225,13 @@ class NewIRFactory {
         return;
       }
       recordJsDoc(typeTree.location, typeTarget.getJSDocInfo());
-      JSTypeExpression typeExpression = convertTypeTree(typeTree);
-      typeTarget.setJsTypeExpression(typeExpression);
+      Node typeExpression = convertTypeTree(typeTree);
+      typeTarget.setDeclaredTypeExpression(typeExpression);
     }
 
-    private JSTypeExpression convertTypeTree(ParseTree typeTree) {
+    private Node convertTypeTree(ParseTree typeTree) {
       maybeWarnTypeSyntax(typeTree);
-      Node typeExpr = process(typeTree);
-      return new JSTypeExpression(typeExpr, sourceName);
+      return process(typeTree);
     }
 
     @Override
