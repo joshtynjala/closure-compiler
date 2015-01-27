@@ -17,7 +17,6 @@
 package com.google.javascript.jscomp.parsing;
 
 import static com.google.common.truth.Truth.THROW_ASSERTION_ERROR;
-import static com.google.common.truth.Truth.assertThat;
 import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.anyType;
 import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.booleanType;
 import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.namedType;
@@ -29,6 +28,7 @@ import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.rec
 import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.stringType;
 import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.undefinedType;
 import static com.google.javascript.jscomp.parsing.TypeDeclarationsIRFactory.unionType;
+import static com.google.javascript.jscomp.testing.NodeSubject.assertNode;
 import static com.google.javascript.rhino.Token.ANY_TYPE;
 import static com.google.javascript.rhino.Token.BOOLEAN_TYPE;
 import static com.google.javascript.rhino.Token.FUNCTION_TYPE;
@@ -42,8 +42,7 @@ import static com.google.javascript.rhino.Token.STRING_TYPE;
 import static com.google.javascript.rhino.Token.UNDEFINED_TYPE;
 import static java.util.Arrays.asList;
 
-import com.google.common.truth.FailureStrategy;
-import com.google.common.truth.Subject;
+import com.google.javascript.jscomp.testing.NodeSubject;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Node.TypeDeclarationNode;
@@ -185,10 +184,6 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
         .isEqualTo(TypeDeclarationsIRFactory.functionType(anyType(), parameters));
   }
 
-  private NodeSubject assertNode(final Node node) {
-    return new NodeSubject(THROW_ASSERTION_ERROR, node);
-  }
-
   private NodeSubject assertParseTypeAndConvert(final String typeExpr) {
     Node oldAST = JsDocInfoParser.parseTypeString(typeExpr);
     if (oldAST == null) {
@@ -196,22 +191,5 @@ public class TypeDeclarationsIRFactoryTest extends TestCase {
     }
     return new NodeSubject(THROW_ASSERTION_ERROR,
         TypeDeclarationsIRFactory.convertTypeNodeAST(oldAST));
-  }
-
-  private class NodeSubject extends Subject<NodeSubject, Node> {
-    public NodeSubject(FailureStrategy failureStrategy, Node subject) {
-      super(failureStrategy, subject);
-    }
-
-    public void isEqualTo(Node node) {
-      String treeDiff = node.checkTreeEquals(getSubject());
-      if (treeDiff != null) {
-        failWithRawMessage("%s", treeDiff);
-      }
-    }
-
-    public void hasType(int tokenType) {
-      assertThat(getSubject().getType()).is(tokenType);
-    }
   }
 }

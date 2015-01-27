@@ -16,8 +16,6 @@
 
 package com.google.javascript.jscomp.parsing;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import com.google.common.collect.ImmutableList;
 import com.google.javascript.jscomp.CodePrinter;
 import com.google.javascript.jscomp.Compiler;
@@ -29,8 +27,6 @@ import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Node.TypeDeclarationNode;
 
 import junit.framework.TestCase;
-
-import java.util.Collections;
 
 public class TypeSyntaxTest extends TestCase {
 
@@ -85,14 +81,14 @@ public class TypeSyntaxTest extends TestCase {
 
   public void testFunctionParamDeclaration() {
     Node fn = parse("function foo(x: string) {\n}").getFirstChild();
-    Node paramType = fn.getFirstChild().getNext().getFirstChild().getJSTypeExpression().getRoot();
-    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), paramType);
+    Node paramType = fn.getFirstChild().getNext().getFirstChild().getDeclaredTypeExpression();
+    assertTreeEquals("string type", TypeDeclarationsIRFactory.stringType(), paramType);
   }
 
   public void testFunctionParamDeclaration_defaultValue() {
     Node fn = parse("function foo(x: string = 'hello') {\n}").getFirstChild();
-    Node paramType = fn.getFirstChild().getNext().getFirstChild().getJSTypeExpression().getRoot();
-    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), paramType);
+    Node paramType = fn.getFirstChild().getNext().getFirstChild().getDeclaredTypeExpression();
+    assertTreeEquals("string type", TypeDeclarationsIRFactory.stringType(), paramType);
   }
 
   public void testFunctionParamDeclaration_destructuringArray() {
@@ -115,20 +111,20 @@ public class TypeSyntaxTest extends TestCase {
 
   public void testFunctionParamDeclaration_arrow() {
     Node fn = parse("(x: string) => 'hello' + x;").getFirstChild().getFirstChild();
-    Node paramType = fn.getFirstChild().getNext().getFirstChild().getJSTypeExpression().getRoot();
-    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), paramType);
+    Node paramType = fn.getFirstChild().getNext().getFirstChild().getDeclaredTypeExpression();
+    assertTreeEquals("string type", TypeDeclarationsIRFactory.stringType(), paramType);
   }
 
   public void testFunctionReturn() {
     Node fn = parse("function foo(): string {\n  return'hello';\n}").getFirstChild();
-    Node fnType = fn.getJSTypeExpression().getRoot();
-    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), fnType);
+    Node fnType = fn.getDeclaredTypeExpression();
+    assertTreeEquals("string type", TypeDeclarationsIRFactory.stringType(), fnType);
   }
 
   public void testFunctionReturn_arrow() {
     Node fn = parse("(): string => 'hello';").getFirstChild().getFirstChild();
-    Node fnType = fn.getJSTypeExpression().getRoot();
-    assertEquivalent("string type", TypeDeclarationsIRFactory.stringType(), fnType);
+    Node fnType = fn.getDeclaredTypeExpression();
+    assertTreeEquals("string type", TypeDeclarationsIRFactory.stringType(), fnType);
   }
 
   public void testFunctionReturn_typeInDocAndSyntax() throws Exception {
@@ -144,10 +140,10 @@ public class TypeSyntaxTest extends TestCase {
 
   public void testCompositeType() {
     Node varDecl = parse("var foo: mymod.ns.Type;").getFirstChild();
-    Node type = varDecl.getFirstChild().getJSTypeExpression().getRoot();
+    Node type = varDecl.getFirstChild().getDeclaredTypeExpression();
     TypeDeclarationNode expected =
         TypeDeclarationsIRFactory.namedType(ImmutableList.of("mymod", "ns", "Type"));
-    assertEquivalent("mymod.ns.Type", expected, type);
+    assertTreeEquals("mymod.ns.Type", expected, type);
   }
 
   public void testCompositeType_trailingDot() {
@@ -174,12 +170,13 @@ public class TypeSyntaxTest extends TestCase {
 
   private void assertVarType(String message, Node expectedType, String source) {
     Node varDecl = parse(source, source).getFirstChild();
-    Node varType = varDecl.getFirstChild().getJSTypeExpression().getRoot();
-    assertEquivalent(message, expectedType, varType);
+    Node varType = varDecl.getFirstChild().getDeclaredTypeExpression();
+    assertTreeEquals(message, expectedType, varType);
   }
 
-  private void assertEquivalent(String message, Node expected, Node actual) {
-    assertTrue(message, expected.isEquivalentTo(actual));
+  private void assertTreeEquals(String message, Node expected, Node actual) {
+    String treeDiff = expected.checkTreeEquals(actual);
+    assertNull(message, treeDiff);
   }
 
   public void testParameterizedType() {
@@ -238,7 +235,7 @@ public class TypeSyntaxTest extends TestCase {
           .setTypeRegistry(compiler.getTypeRegistry())
           .build()  // does the actual printing.
           .trim();
-      assertThat(actual).isEqualTo(expected);
+      assertEquals(expected, actual);
     }
 
     return script;

@@ -1043,14 +1043,16 @@ class CodeGenerator {
       case Token.VOID_TYPE:
         add("void");
         break;
+      case Token.UNDEFINED_TYPE:
+        add("undefined");
+        break;
       case Token.NAMED_TYPE:
         // Children are a chain of getprop nodes.
         add(first);
         break;
       case Token.ARRAY_TYPE:
         add(first);
-        add("[");
-        add("]");
+        add("[]");
         break;
 
       case Token.PARAMETERIZED_TYPE:
@@ -1075,10 +1077,9 @@ class CodeGenerator {
   }
 
   private void maybeAddTypeDecl(Node n) {
-    if (languageMode == LanguageMode.ECMASCRIPT6_TYPED
-        && n.getJSTypeExpression() != null) {
+    if (n.getDeclaredTypeExpression() != null) {
       add(": ");
-      add(n.getJSTypeExpression().getRoot());
+      add(n.getDeclaredTypeExpression());
     }
   }
 
