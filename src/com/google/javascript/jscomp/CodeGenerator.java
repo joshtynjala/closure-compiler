@@ -1059,12 +1059,7 @@ class CodeGenerator {
         // First child is the type that's parameterized, later children are the arguments.
         add(first);
         add("<");
-        for (Node c = first.getNext(); c != null; c = c.getNext()) {
-          add(c);
-          if (c.getNext() != null) {
-            cc.addOp(",", true);
-          }
-        }
+        addList(first.getNext());
         add(">");
         break;
 
@@ -1077,7 +1072,8 @@ class CodeGenerator {
   }
 
   private void maybeAddTypeDecl(Node n) {
-    if (n.getDeclaredTypeExpression() != null) {
+    if (languageMode == LanguageMode.ECMASCRIPT6_TYPED
+        && n.getDeclaredTypeExpression() != null) {
       add(": ");
       add(n.getDeclaredTypeExpression());
     }
