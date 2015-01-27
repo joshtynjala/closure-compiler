@@ -178,7 +178,7 @@ public class TypeSyntaxTest extends TestCase {
 
   private void assertTreeEquals(String message, Node expected, Node actual) {
     String treeDiff = expected.checkTreeEquals(actual);
-    assertNull(message, treeDiff);
+    assertNull(message + ": " + treeDiff, treeDiff);
   }
 
   public void testParameterizedType() {

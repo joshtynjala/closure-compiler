@@ -2200,6 +2200,9 @@ class NewIRFactory {
           case "void":
             typeNode = TypeDeclarationsIRFactory.voidType();
             break;
+          case "undefined":
+            typeNode = TypeDeclarationsIRFactory.undefinedType();
+            break;
           default:
             typeNode = TypeDeclarationsIRFactory.namedType(tree.segments);
             break;
