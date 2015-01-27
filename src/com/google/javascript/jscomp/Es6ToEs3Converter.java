@@ -723,6 +723,8 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     boolean useUnique = NodeUtil.isStatement(classNode) && !NodeUtil.isInFunction(classNode);
     String uniqueFullClassName = useUnique ? getUniqueClassName(fullClassName) : fullClassName;
     String superClassString = superClassName.getQualifiedName();
+    Node classNameAccess = NodeUtil.newQName(compiler, uniqueFullClassName);
+    Node prototypeAccess = NodeUtil.newPropertyAccess(compiler, classNameAccess, "prototype");
 
     Verify.verify(NodeUtil.isStatement(insertionPoint));
 
@@ -731,6 +733,10 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     // Process all members of the class
     for (Node member : classMembers.children()) {
       if (member.isEmpty()) {
+        continue;
+      }
+      if (member.isMemberVariableDef() || member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE)) {
+        // Member variables are handled below, after finding the constructor.
         continue;
       }
 
@@ -742,43 +748,13 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
               constructor.getFirstChild(), className.cloneNode());
         }
       } else {
-        Node qualifiedMemberName;
-        Node method;
-        if (member.isMemberFunctionDef()) {
-          if (member.isStaticMember()) {
-            qualifiedMemberName = NodeUtil.newQName(
-                compiler,
-                Joiner.on(".").join(
-                    uniqueFullClassName,
-                    member.getString()));
-          } else {
-            qualifiedMemberName = NodeUtil.newQName(
-                compiler,
-                Joiner.on(".").join(
-                    uniqueFullClassName,
-                    "prototype",
-                    member.getString()));
-          }
-          method = member.getFirstChild().detachFromParent();
-        } else if (member.isComputedProp()) {
-          if (member.isStaticMember()) {
-            qualifiedMemberName = IR.getelem(
-                NodeUtil.newQName(
-                    compiler,
-                    uniqueFullClassName),
-                member.removeFirstChild());
-          } else {
-            qualifiedMemberName = IR.getelem(
-                NodeUtil.newQName(
-                    compiler,
-                    Joiner.on('.').join(uniqueFullClassName, "prototype")),
-                member.removeFirstChild());
-          }
-          method = member.getLastChild().detachFromParent();
-        } else {
-          throw new IllegalStateException("Unexpected class member: " + member);
-        }
-        Node assign = IR.assign(qualifiedMemberName, method);
+        Node qualifiedMemberAccess =
+            getQualifiedMemberAccess(member, classNameAccess, prototypeAccess);
+        Node method = member.isMemberFunctionDef() ?
+            member.getFirstChild().detachFromParent() :
+            member.getLastChild().detachFromParent();
+
+        Node assign = IR.assign(qualifiedMemberAccess, method);
         assign.useSourceInfoIfMissingFromForTree(member);
 
         JSDocInfo info = member.getJSDocInfo();
@@ -806,6 +782,31 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     }
 
     Preconditions.checkNotNull(constructor);
+
+    for (Node member: classMembers.children()) {
+      if (!member.isMemberVariableDef() && !member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE)) {
+        continue;
+      }
+
+      Node newNode;
+      Node qualifiedMemberAccess =
+          getQualifiedMemberAccess(member, classNameAccess, IR.thisNode());
+      Node initializer = member.removeFirstChild();
+      if (initializer != null) {
+        newNode = IR.assign(qualifiedMemberAccess, initializer);
+      } else {
+        newNode = qualifiedMemberAccess;
+      }
+      newNode = NodeUtil.newExpr(newNode);
+      newNode.useSourceInfoIfMissingFromForTree(member);
+      if (member.isStaticMember()) {
+        insertionPoint.getParent().addChildAfter(newNode, insertionPoint);
+        insertionPoint = newNode;
+      } else {
+        constructor.getLastChild().addChildToBack(newNode);
+      }
+    }
+
     JSDocInfo classJSDoc = classNode.getJSDocInfo();
     JSDocInfoBuilder newInfo = (classJSDoc != null)
         ? JSDocInfoBuilder.copyFrom(classJSDoc)
@@ -888,6 +889,18 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     }
 
     compiler.reportCodeChange();
+  }
+
+  private Node getQualifiedMemberAccess(Node member, Node staticAccess, Node instanceAccess) {
+    Node context = member.isStaticMember() ? staticAccess : instanceAccess;
+    context = context.cloneTree();
+    if (member.isMemberFunctionDef() || member.isMemberVariableDef()) {
+      return NodeUtil.newPropertyAccess(compiler, context, member.getString());
+    } else if (member.isComputedProp()) {
+      return IR.getelem(context, member.removeFirstChild());
+    } else {
+      throw new IllegalStateException("Unexpected class member: " + member);
+    }
   }
 
   /**

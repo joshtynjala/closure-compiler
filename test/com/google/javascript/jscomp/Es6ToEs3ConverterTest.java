@@ -254,6 +254,52 @@ public class Es6ToEs3ConverterTest extends CompilerTestCase {
     ));
   }
 
+  public void testMemberVariable() throws Exception {
+    setAcceptedLanguage(LanguageMode.ECMASCRIPT6_TYPED);
+    test(
+        Joiner.on('\n').join(
+            "class C {",
+            "  mv: number;",
+            "  mv2: number = 1;",
+            "  constructor() {",
+            "    this.f = 1;",
+            "  }",
+            "}"),
+        Joiner.on('\n').join(
+            "/**",
+            " * @constructor",
+            " * @struct",
+            " */",
+            "var C = function() {",
+            "  this.f = 1;",
+            "  this.mv;",
+            "  this.mv2 = 1;",
+            "};"));
+  }
+
+  public void testComputedPropertyVariable() throws Exception {
+    setAcceptedLanguage(LanguageMode.ECMASCRIPT6_TYPED);
+    test(
+        Joiner.on('\n').join(
+            "class C {",
+            "  ['mv']: number;",
+            "  ['mv' + 2]: number = 1;",
+            "  constructor() {",
+            "    this.f = 1;",
+            "  }",
+            "}"),
+        Joiner.on('\n').join(
+            "/**",
+            " * @constructor",
+            " * @struct",
+            " */",
+            "var C = function() {",
+            "  this.f = 1;",
+            "  this['mv'];",
+            "  this['mv' + 2] = 1;",
+            "};"));
+  }
+
   public void testClassStatementInsideIf() {
     test(Joiner.on('\n').join(
         "if (foo) {",

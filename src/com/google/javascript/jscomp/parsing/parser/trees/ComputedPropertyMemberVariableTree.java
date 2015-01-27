@@ -17,18 +17,21 @@ package com.google.javascript.jscomp.parsing.parser.trees;
 
 import com.google.javascript.jscomp.parsing.parser.util.SourceRange;
 
+import javax.annotation.Nullable;
+
 /**
  * Represents a member variable with a computed property name.
  */
 public class ComputedPropertyMemberVariableTree extends ParseTree {
   public final ParseTree property;
-  public final ParseTree declaredType;
-  // TODO(martinprobst): Initializers.
+  @Nullable public final ParseTree declaredType;
+  @Nullable public final ParseTree initializer;
 
   public ComputedPropertyMemberVariableTree(SourceRange location, ParseTree property,
-      ParseTree declaredType) {
+      @Nullable ParseTree declaredType, @Nullable ParseTree initializer) {
     super(ParseTreeType.COMPUTED_PROPERTY_MEMBER_VARIABLE, location);
     this.property = property;
     this.declaredType = declaredType;
+    this.initializer = initializer;
   }
 }

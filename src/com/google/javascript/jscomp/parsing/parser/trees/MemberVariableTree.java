@@ -26,11 +26,13 @@ import javax.annotation.Nullable;
 public class MemberVariableTree extends ParseTree {
   public final IdentifierToken name;
   @Nullable public final ParseTree declaredType;
-  // TODO(martinprobst): Initializers.
+  @Nullable public final ParseTree initializer;
 
-  public MemberVariableTree(SourceRange location, IdentifierToken name, ParseTree declaredType) {
+  public MemberVariableTree(SourceRange location, IdentifierToken name,
+      @Nullable ParseTree declaredType, @Nullable ParseTree initializer) {
     super(ParseTreeType.MEMBER_VARIABLE, location);
     this.name = name;
     this.declaredType = declaredType;
+    this.initializer = initializer;
   }
 }

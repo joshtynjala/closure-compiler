@@ -488,13 +488,17 @@ public class Parser {
       if (peek(TokenType.COLON)) {
         declaredType = parseTypeAnnotation();
       }
-      // TODO(martinprobst): Initializer.
+      ParseTree initializer = null;
+      if (peek(TokenType.EQUAL)) {
+        eat(TokenType.EQUAL);
+        initializer = parseExpression();
+      }
       eat(TokenType.SEMI_COLON);
       if (nameExpr == null) {
-        return new MemberVariableTree(getTreeLocation(start), name, declaredType);
+        return new MemberVariableTree(getTreeLocation(start), name, declaredType, initializer);
       } else {
         return new ComputedPropertyMemberVariableTree(getTreeLocation(start), nameExpr,
-            declaredType);
+            declaredType, initializer);
       }
     }
   }

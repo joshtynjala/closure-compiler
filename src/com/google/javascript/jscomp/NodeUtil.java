@@ -2665,6 +2665,17 @@ public final class NodeUtil {
   }
 
   /**
+   * Creates a property access on the {@code context} tree.
+   */
+  public static Node newPropertyAccess(AbstractCompiler compiler, Node context, String name) {
+    Node propNode = IR.getprop(context, IR.string(name));
+    if (compiler.getCodingConvention().isConstantKey(name)) {
+      propNode.putBooleanProp(Node.IS_CONSTANT_NAME, true);
+    }
+    return propNode;
+  }
+
+  /**
    * Creates a node representing a qualified name.
    *
    * @param name A qualified name (e.g. "foo" or "foo.bar.baz")

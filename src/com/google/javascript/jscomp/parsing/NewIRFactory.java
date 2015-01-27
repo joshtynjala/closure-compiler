@@ -1555,7 +1555,10 @@ class NewIRFactory {
     @Override
     Node processNumberLiteral(LiteralExpressionTree literalNode) {
       double value = normalizeNumber(literalNode.literalToken.asLiteral());
-      return newNumberNode(value);
+      Node number = newNumberNode(value);
+      number.setLineno(lineno(literalNode));
+      number.setCharno(charno(literalNode));
+      return number;
     }
 
     @Override
@@ -1609,6 +1612,9 @@ class NewIRFactory {
       Node n = newNode(Token.COMPUTED_PROP, transform(tree.property));
       maybeProcessType(n, tree.declaredType);
       n.putBooleanProp(Node.COMPUTED_PROP_VARIABLE, true);
+      if (tree.initializer != null) {
+        n.addChildrenToFront(process(tree.initializer));
+      }
       return n;
     }
 
@@ -2121,6 +2127,9 @@ class NewIRFactory {
     Node processMemberVariable(MemberVariableTree tree) {
       Node member = newStringNode(Token.MEMBER_VARIABLE_DEF, tree.name.value);
       maybeProcessType(member, tree.declaredType);
+      if (tree.initializer != null) {
+        member.addChildrenToFront(process(tree.initializer));
+      }
       return member;
     }
 

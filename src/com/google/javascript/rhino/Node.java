@@ -177,6 +177,7 @@ public class Node implements Cloneable, Serializable {
         case COMPUTED_PROP_METHOD: return "computed_prop_method";
         case COMPUTED_PROP_GETTER: return "computed_prop_getter";
         case COMPUTED_PROP_SETTER: return "computed_prop_setter";
+        case COMPUTED_PROP_VARIABLE: return "computed_prop_variable";
         case ANALYZED_DURING_GTI:  return "analyzed_during_gti";
         case CONSTANT_PROPERTY_DEF: return "constant_property_def";
         case JS_TYPE_EXPRESSION: return "js_type_expression";
