@@ -509,6 +509,7 @@ class NewIRFactory {
         case Token.SETTER_DEF:
         case Token.MEMBER_DEF:
         case Token.STRING_KEY:
+        case Token.EXPORT:
           return;
         case Token.GETELEM:
         case Token.GETPROP:
