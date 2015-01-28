@@ -961,7 +961,7 @@ class CodeGenerator {
         add(first);
         add("]");
         // TODO(martinprobst): There's currently no syntax for properties in object literals that
-        // have type declarations on them (a la `{foo: number: 12}`). Supper when figured out.
+        // have type declarations on them (a la `{foo: number: 12}`). Support when figured out.
         maybeAddTypeDecl(n);
         if (n.getBooleanProp(Node.COMPUTED_PROP_METHOD)
             || n.getBooleanProp(Node.COMPUTED_PROP_GETTER)
