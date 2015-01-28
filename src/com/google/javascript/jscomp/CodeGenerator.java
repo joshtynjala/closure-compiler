@@ -1072,8 +1072,7 @@ class CodeGenerator {
   }
 
   private void maybeAddTypeDecl(Node n) {
-    if (languageMode == LanguageMode.ECMASCRIPT6_TYPED
-        && n.getDeclaredTypeExpression() != null) {
+    if (n.getDeclaredTypeExpression() != null) {
       add(": ");
       add(n.getDeclaredTypeExpression());
     }
