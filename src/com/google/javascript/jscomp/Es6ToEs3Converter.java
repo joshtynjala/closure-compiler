@@ -15,7 +15,6 @@
  */
 package com.google.javascript.jscomp;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
