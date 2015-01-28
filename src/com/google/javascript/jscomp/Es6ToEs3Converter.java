@@ -750,9 +750,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
       } else {
         Node qualifiedMemberAccess =
             getQualifiedMemberAccess(member, classNameAccess, prototypeAccess);
-        Node method = member.isMemberFunctionDef() ?
-            member.getFirstChild().detachFromParent() :
-            member.getLastChild().detachFromParent();
+        Node method = member.getLastChild().detachFromParent();
 
         Node assign = IR.assign(qualifiedMemberAccess, method);
         assign.useSourceInfoIfMissingFromForTree(member);
@@ -784,7 +782,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     Preconditions.checkNotNull(constructor);
 
     Node memberVarInsertionPoint = null;  // To insert up front initially
-    for (Node member: classMembers.children()) {
+    for (Node member : classMembers.children()) {
       if (!member.isMemberVariableDef() && !member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE)) {
         continue;
       }
