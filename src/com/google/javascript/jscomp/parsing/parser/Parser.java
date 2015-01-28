@@ -495,9 +495,10 @@ public class Parser {
       }
       eat(TokenType.SEMI_COLON);
       if (nameExpr == null) {
-        return new MemberVariableTree(getTreeLocation(start), name, declaredType, initializer);
+        return new MemberVariableTree(getTreeLocation(start), name, isStatic, declaredType,
+            initializer);
       } else {
-        return new ComputedPropertyMemberVariableTree(getTreeLocation(start), nameExpr,
+        return new ComputedPropertyMemberVariableTree(getTreeLocation(start), nameExpr, isStatic,
             declaredType, initializer);
       }
     }

@@ -271,10 +271,29 @@ public class Es6ToEs3ConverterTest extends CompilerTestCase {
             " * @struct",
             " */",
             "var C = function() {",
-            "  this.f = 1;",
             "  this.mv;",
             "  this.mv2 = 1;",
+            "  this.f = 1;",
             "};"));
+  }
+
+  public void testMemberVariable_static() throws Exception {
+    setAcceptedLanguage(LanguageMode.ECMASCRIPT6_TYPED);
+    test(
+        Joiner.on('\n').join(
+            "class C {",
+            "  static smv = 3;",
+            "  constructor() {",
+            "  }",
+            "}"),
+        Joiner.on('\n').join(
+            "/**",
+            " * @constructor",
+            " * @struct",
+            " */",
+            "var C = function() {",
+            "};\n",
+            "C.smv = 3;"));
   }
 
   public void testComputedPropertyVariable() throws Exception {
@@ -294,10 +313,29 @@ public class Es6ToEs3ConverterTest extends CompilerTestCase {
             " * @struct",
             " */",
             "var C = function() {",
-            "  this.f = 1;",
             "  this['mv'];",
             "  this['mv' + 2] = 1;",
+            "  this.f = 1;",
             "};"));
+  }
+
+  public void testComputedPropertyVariable_static() throws Exception {
+    setAcceptedLanguage(LanguageMode.ECMASCRIPT6_TYPED);
+    test(
+        Joiner.on('\n').join(
+            "class C {",
+            "  static ['smv' + 2]: number = 1;",
+            "  constructor() {",
+            "  }",
+            "}"),
+        Joiner.on('\n').join(
+            "/**",
+            " * @constructor",
+            " * @struct",
+            " */",
+            "var C = function() {",
+            "};",
+            "C['smv' + 2] = 1;"));
   }
 
   public void testClassStatementInsideIf() {

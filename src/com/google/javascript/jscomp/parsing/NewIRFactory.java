@@ -1613,6 +1613,7 @@ class NewIRFactory {
       if (tree.initializer != null) {
         n.addChildrenToBack(process(tree.initializer));
       }
+      n.setStaticMember(tree.isStatic);
       return n;
     }
 
@@ -2128,6 +2129,7 @@ class NewIRFactory {
       if (tree.initializer != null) {
         member.addChildrenToFront(process(tree.initializer));
       }
+      member.setStaticMember(tree.isStatic);
       return member;
     }
 

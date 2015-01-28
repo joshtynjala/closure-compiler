@@ -783,6 +783,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
 
     Preconditions.checkNotNull(constructor);
 
+    Node memberVarInsertionPoint = null;  // To insert up front initially
     for (Node member: classMembers.children()) {
       if (!member.isMemberVariableDef() && !member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE)) {
         continue;
@@ -803,7 +804,8 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
         insertionPoint.getParent().addChildAfter(newNode, insertionPoint);
         insertionPoint = newNode;
       } else {
-        constructor.getLastChild().addChildToBack(newNode);
+        constructor.getLastChild().addChildAfter(newNode, memberVarInsertionPoint);
+        memberVarInsertionPoint = newNode;
       }
     }
 
