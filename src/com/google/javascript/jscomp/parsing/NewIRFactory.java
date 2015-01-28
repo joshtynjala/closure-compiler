@@ -1611,7 +1611,7 @@ class NewIRFactory {
       maybeProcessType(n, tree.declaredType);
       n.putBooleanProp(Node.COMPUTED_PROP_VARIABLE, true);
       if (tree.initializer != null) {
-        n.addChildrenToFront(process(tree.initializer));
+        n.addChildrenToBack(process(tree.initializer));
       }
       return n;
     }

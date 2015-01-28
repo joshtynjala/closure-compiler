@@ -534,6 +534,11 @@ class CodeGenerator {
         if (n.isMemberVariableDef()) {
           add(n.getString());
           maybeAddTypeDecl(n);
+          Node initializer = first;
+          if (initializer != null) {
+            cc.addOp("=", true);
+            add(initializer);
+          }
           add(";");
         } else {
           Preconditions.checkState(childCount == 1);
@@ -955,6 +960,9 @@ class CodeGenerator {
         add("[");
         add(first);
         add("]");
+        // TODO(martinprobst): There's currently no syntax for properties in object literals that
+        // have type declarations on them (a la `{foo: number: 12}`). Supper when figured out.
+        maybeAddTypeDecl(n);
         if (n.getBooleanProp(Node.COMPUTED_PROP_METHOD)
             || n.getBooleanProp(Node.COMPUTED_PROP_GETTER)
             || n.getBooleanProp(Node.COMPUTED_PROP_SETTER)) {
@@ -965,11 +973,20 @@ class CodeGenerator {
           add(params);
           add(body, Context.PRESERVE_BLOCK);
         } else {
+          // This is a field or object literal property.
           boolean isInClass = n.getParent().getType() == Token.CLASS_MEMBERS;
-          if (first.getNext() != null) {
-            add(isInClass ? ":" : "=");  // Object literal value or member variable initializer.
-            add(first.getNext());
+          Node initializer = first.getNext();
+          if (initializer != null) {
+            // Object literal value or member variable initializer.
+            if (isInClass) {
+              cc.addOp("=", true);
+            } else {
+              cc.addOp(":", false);
+            }
+            add(initializer);
           } else {
+            // Computed properties must either have an initializer or be computed member variable
+            // properties that exist for their type declaration.
             Preconditions.checkState(n.getBooleanProp(Node.COMPUTED_PROP_VARIABLE));
           }
           if (isInClass) {

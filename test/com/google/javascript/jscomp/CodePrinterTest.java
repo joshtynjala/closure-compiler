@@ -1900,12 +1900,12 @@ public class CodePrinterTest extends TestCase {
     assertPrettyPrint(
         "class C{}",
         "class C {\n}\n");
-    // TODO(johnlenz): fix line breaks
     assertPrettyPrint(
         "class C{member(){}get f(){}}",
         "class C {\n" +
         "  member() {\n" +
-        "  }get f() {\n" +
+        "  }\n" +
+        "  get f() {\n" +
         "  }\n" +
         "}\n");
     assertPrettyPrint(
