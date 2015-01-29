@@ -123,7 +123,7 @@ import java.util.regex.Pattern;
 /**
  * IRFactory transforms the external AST to the internal AST.
  */
-class IRFactory {
+class NewIRFactory {
 
   static final String GETTER_ERROR_MESSAGE =
       "getters are not supported in older versions of JavaScript. " +
@@ -235,7 +235,7 @@ class IRFactory {
   private boolean hasTypeSyntax = false;
   private boolean hasJsDocTypeAnnotations = false;
 
-  private IRFactory(String sourceString,
+  private NewIRFactory(String sourceString,
                     StaticSourceFile sourceFile,
                     Config config,
                     ErrorReporter errorReporter,
@@ -303,7 +303,7 @@ class IRFactory {
                                    String sourceString,
                                    Config config,
                                    ErrorReporter errorReporter) {
-    IRFactory irFactory = new IRFactory(sourceString, sourceFile,
+    NewIRFactory irFactory = new NewIRFactory(sourceString, sourceFile,
         config, errorReporter, tree.sourceComments);
 
     // don't call transform as we don't want standard jsdoc handling.
