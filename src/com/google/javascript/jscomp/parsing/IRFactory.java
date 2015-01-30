@@ -2333,6 +2333,8 @@ class IRFactory {
           return processComputedPropertyDefinition(node.asComputedPropertyDefinition());
         case COMPUTED_PROPERTY_GETTER:
           return processComputedPropertyGetter(node.asComputedPropertyGetter());
+        case COMPUTED_PROPERTY_MEMBER_VARIABLE:
+          return processComputedPropertyMemberVariable(node.asComputedPropertyMemberVariable());
         case COMPUTED_PROPERTY_METHOD:
           return processComputedPropertyMethod(node.asComputedPropertyMethod());
         case COMPUTED_PROPERTY_SETTER:
@@ -2434,6 +2436,8 @@ class IRFactory {
           return processParameterizedType(node.asParameterizedType());
         case ARRAY_TYPE:
           return processArrayType(node.asArrayType());
+        case MEMBER_VARIABLE:
+          return processMemberVariable(node.asMemberVariable());
 
         default:
           break;
