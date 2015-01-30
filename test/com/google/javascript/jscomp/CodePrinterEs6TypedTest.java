@@ -23,58 +23,62 @@ public class CodePrinterEs6TypedTest extends CodePrinterTestBase {
   public void setUp() {
     super.setUp();
     languageMode = LanguageMode.ECMASCRIPT6_TYPED;
-    singleQuoteStrings = true;
   }
 
-  @Override
-  void assertPrintSame(String js) {
-    String parsed = parsePrint(js, true, CodePrinter.DEFAULT_LINE_LENGTH_THRESHOLD);
+  void assertPrettyPrintSame(String js) {
+    String parsed = parsePrint(js, newCompilerOptions(new CompilerOptionBuilder() {
+      @Override void setOptions(CompilerOptions options) {
+        options.setPrettyPrint(true);
+        options.setPreferLineBreakAtEndOfFile(false);
+        options.setPreferSingleQuotes(true);
+      }
+    }));
     parsed = parsed.trim(); // strip trailing line break.
     assertEquals(js, parsed);
   }
 
   public void testVariableDeclaration() {
-    assertPrintSame("var foo: any = 'hello';");
-    assertPrintSame("var foo: number = 'hello';");
-    assertPrintSame("var foo: boolean = 'hello';");
-    assertPrintSame("var foo: string = 'hello';");
-    assertPrintSame("var foo: void = 'hello';");
-    assertPrintSame("var foo: hello = 'hello';");
+    assertPrettyPrintSame("var foo: any = 'hello';");
+    assertPrettyPrintSame("var foo: number = 'hello';");
+    assertPrettyPrintSame("var foo: boolean = 'hello';");
+    assertPrettyPrintSame("var foo: string = 'hello';");
+    assertPrettyPrintSame("var foo: void = 'hello';");
+    assertPrettyPrintSame("var foo: hello = 'hello';");
   }
 
   public void testFunctionParamDeclaration() {
-    assertPrintSame("function foo(x: string) {\n}");
+    assertPrettyPrintSame("function foo(x: string) {\n}");
   }
 
   public void testFunctionParamDeclaration_defaultValue() {
-    assertPrintSame("function foo(x: string = 'hello') {\n}");
+    assertPrettyPrintSame("function foo(x: string = 'hello') {\n}");
   }
 
   public void testFunctionParamDeclaration_arrow() {
-    assertPrintSame("(x: string) => 'hello' + x;");
+    assertPrettyPrintSame("(x: string) => 'hello' + x;");
   }
 
   public void testFunctionReturn() {
-    assertPrintSame("function foo(): string {\n  return'hello';\n}");
+    assertPrettyPrintSame("function foo(): string {\n  return 'hello';\n}");
   }
 
   public void testFunctionReturn_arrow() {
-    assertPrintSame("(): string => 'hello';");
+    assertPrettyPrintSame("(): string => 'hello';");
   }
 
   public void testCompositeType() {
-    assertPrintSame("var foo: mymod.ns.Type;");
+    assertPrettyPrintSame("var foo: mymod.ns.Type;");
   }
 
   public void testArrayType() {
-    assertPrintSame( "var foo: string[];");
+    assertPrettyPrintSame( "var foo: string[];");
   }
 
   public void testArrayType_qualifiedType() {
-    assertPrintSame( "var foo: mymod.ns.Type[];");
+    assertPrettyPrintSame( "var foo: mymod.ns.Type[];");
   }
 
   public void testParameterizedType() {
-    assertPrintSame("var x: my.parameterized.Type<ns.A, ns.B>;");
+    assertPrettyPrintSame("var x: my.parameterized.Type<ns.A, ns.B>;");
   }
 }

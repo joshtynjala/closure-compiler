@@ -29,10 +29,8 @@ public abstract class CodePrinterTestBase extends TestCase {
   protected boolean allowWarnings = false;
   protected boolean trustedStrings = true;
   protected boolean preserveTypeAnnotations = false;
-  protected boolean singleQuoteStrings = false;
   protected LanguageMode languageMode = LanguageMode.ECMASCRIPT5;
-
-  private Compiler lastCompiler = null;
+  protected Compiler lastCompiler = null;
 
   @Override public void setUp() {
     allowWarnings = false;
@@ -95,63 +93,22 @@ public abstract class CodePrinterTestBase extends TestCase {
     }
   }
 
-  String parsePrint(String js, CompilerOptions options) {
-    return new CodePrinter.Builder(parse(js)).setCompilerOptions(options).build();
+  abstract class CompilerOptionBuilder {
+    abstract void setOptions(CompilerOptions options);
   }
 
-  CompilerOptions newCompilerOptions(boolean prettyprint, int lineThreshold) {
+  CompilerOptions newCompilerOptions(CompilerOptionBuilder builder) {
     CompilerOptions options = new CompilerOptions();
     options.setTrustedStrings(trustedStrings);
     options.preserveTypeAnnotations = preserveTypeAnnotations;
     options.setLanguageOut(languageMode);
-    options.setPrettyPrint(prettyprint);
-    options.setLineLengthThreshold(lineThreshold);
-    options.setPreferSingleQuotes(singleQuoteStrings);
+    builder.setOptions(options);
     return options;
   }
 
-  CompilerOptions newCompilerOptions(boolean prettyprint, int lineThreshold, boolean lineBreak) {
-    CompilerOptions options = newCompilerOptions(prettyprint, lineThreshold);
-    options.setLineBreak(lineBreak);
-    options.setPreferSingleQuotes(singleQuoteStrings);
-    return options;
+  String parsePrint(String js, CompilerOptions options) {
+    return new CodePrinter.Builder(parse(js)).setCompilerOptions(options).build();
   }
-
-  String parsePrint(String js, boolean prettyprint, int lineThreshold) {
-    return parsePrint(js, newCompilerOptions(prettyprint, lineThreshold));
-  }
-
-  String parsePrint(String js, boolean prettyprint, boolean lineBreak, int lineThreshold) {
-    return parsePrint(js, newCompilerOptions(prettyprint, lineThreshold, lineBreak));
-  }
-
-  String parsePrint(String js, boolean prettyprint, boolean lineBreak,
-      boolean preferLineBreakAtEof, int lineThreshold) {
-    CompilerOptions options = newCompilerOptions(prettyprint, lineThreshold, lineBreak);
-    options.setPreferLineBreakAtEndOfFile(preferLineBreakAtEof);
-    return parsePrint(js, options);
-  }
-
-  String parsePrint(String js, boolean prettyprint, boolean lineBreak, int lineThreshold,
-      boolean outputTypes) {
-    return new CodePrinter.Builder(parse(js, true))
-        .setCompilerOptions(newCompilerOptions(prettyprint, lineThreshold, lineBreak))
-        .setOutputTypes(outputTypes)
-        .setTypeRegistry(lastCompiler.getTypeRegistry())
-        .build();
-  }
-
-  String parsePrint(String js, boolean prettyprint, boolean lineBreak,
-                    int lineThreshold, boolean outputTypes,
-                    boolean tagAsStrict) {
-    return new CodePrinter.Builder(parse(js, true))
-        .setCompilerOptions(newCompilerOptions(prettyprint, lineThreshold, lineBreak))
-        .setOutputTypes(outputTypes)
-        .setTypeRegistry(lastCompiler.getTypeRegistry())
-        .setTagAsStrict(tagAsStrict)
-        .build();
-  }
-
 
   String printNode(Node n) {
     CompilerOptions options = new CompilerOptions();
@@ -164,13 +121,18 @@ public abstract class CodePrinterTestBase extends TestCase {
     assertEquals(expectedJs, printNode(ast));
   }
 
-  void assertPrint(String js, String expected) {
+  protected void assertPrint(String js, String expected) {
     parse(expected); // validate the expected string is valid JS
     assertEquals(expected,
-        parsePrint(js, false, CodePrinter.DEFAULT_LINE_LENGTH_THRESHOLD));
+        parsePrint(js, newCompilerOptions(new CompilerOptionBuilder() {
+          @Override void setOptions(CompilerOptions options) {
+            options.setPrettyPrint(false);
+            options.setLineLengthThreshold(CodePrinter.DEFAULT_LINE_LENGTH_THRESHOLD);
+          }
+        })));
   }
 
-  void assertPrintSame(String js) {
+  protected void assertPrintSame(String js) {
     assertPrint(js, js);
   }
 }
