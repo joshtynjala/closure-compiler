@@ -1043,6 +1043,9 @@ class CodeGenerator {
       case Token.ANY_TYPE:
         add("any");
         break;
+      case Token.NULL_TYPE:
+        add("null");
+        break;
       case Token.VOID_TYPE:
         add("void");
         break;
