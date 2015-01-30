@@ -220,6 +220,11 @@ public class DefaultPassConfig extends PassConfig {
       checks.add(checkVariableReferences);
     }
 
+    if (options.needsConversion()
+        && options.getLanguageIn() == LanguageMode.ECMASCRIPT6_TYPED) {
+      checks.add(convertEs6TypedToEs6);
+    }
+
     if (options.needsConversion()) {
       checks.add(es6RenameVariablesInParamLists);
       checks.add(es6SplitVariableDeclarations);
@@ -1131,6 +1136,17 @@ public class DefaultPassConfig extends PassConfig {
     @Override
     protected HotSwapCompilerPass create(final AbstractCompiler compiler) {
       return new Es6RewriteLetConst(compiler);
+    }
+  };
+
+  /**
+   * Desugars ES6_TYPED features into ES6 code.
+   */
+  final HotSwapPassFactory convertEs6TypedToEs6 =
+      new HotSwapPassFactory("convertEs6Typed", true) {
+    @Override
+    protected HotSwapCompilerPass create(final AbstractCompiler compiler) {
+      return new Es6TypedToEs6Converter(compiler);
     }
   };
 

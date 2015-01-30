@@ -676,9 +676,8 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
       return;
     }
 
-    // The fully qualified name of the class, which will be used in the output.
-    // May come from the class itself or the LHS of an assignment.
-    String fullClassName = null;
+    ClassRewriter classRewriter = new ClassRewriter();
+    classRewriter.compiler = compiler;
 
     // Whether the constructor function in the output should be anonymous.
     boolean anonymous;
@@ -687,26 +686,26 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     // assignment or var statement, convert it. In any other case, the
     // code is too dynamic, so just call cannotConvert.
     if (NodeUtil.isStatement(classNode)) {
-      fullClassName = className.getString();
-      anonymous = false;
-      insertionPoint = classNode;
+      classRewriter.fullClassName = className.getString();
+      classRewriter.anonymous = false;
+      classRewriter.insertionPoint = classNode;
     } else if (parent.isAssign() && parent.getParent().isExprResult()) {
       // Add members after the EXPR_RESULT node:
       // example.C = class {}; example.C.prototype.foo = function() {};
-      fullClassName = parent.getFirstChild().getQualifiedName();
-      if (fullClassName == null) {
+      classRewriter.fullClassName = parent.getFirstChild().getQualifiedName();
+      if (classRewriter.fullClassName == null) {
         cannotConvert(parent, "Can only convert classes that are declarations or the right hand"
             + " side of a simple assignment.");
         return;
       }
-      anonymous = true;
-      insertionPoint = parent.getParent();
+      classRewriter.anonymous = true;
+      classRewriter.insertionPoint = parent.getParent();
     } else if (parent.isName()) {
       // Add members after the 'var' statement.
       // var C = class {}; C.prototype.foo = function() {};
-      fullClassName =  parent.getString();
-      anonymous = true;
-      insertionPoint = parent.getParent();
+      classRewriter.fullClassName =  parent.getString();
+      classRewriter.anonymous = true;
+      classRewriter.insertionPoint = parent.getParent();
     } else {
       cannotConvert(parent, "Can only convert classes that are declarations or the right hand"
             + " side of a simple assignment.");
@@ -714,12 +713,14 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     }
 
     boolean useUnique = NodeUtil.isStatement(classNode) && !NodeUtil.isInFunction(classNode);
-    String uniqueFullClassName = useUnique ? getUniqueClassName(fullClassName) : fullClassName;
+    String uniqueFullClassName =
+        useUnique ? getUniqueClassName(classRewriter.fullClassName) : classRewriter.fullClassName;
     String superClassString = superClassName.getQualifiedName();
-    Node classNameAccess = NodeUtil.newQName(compiler, uniqueFullClassName);
-    Node prototypeAccess = NodeUtil.newPropertyAccess(compiler, classNameAccess, "prototype");
+    classRewriter.staticAccess = NodeUtil.newQName(compiler, uniqueFullClassName);
+    classRewriter.instanceAccess =
+        NodeUtil.newPropertyAccess(compiler, classRewriter.staticAccess, "prototype");
 
-    Verify.verify(NodeUtil.isStatement(insertionPoint));
+    Verify.verify(NodeUtil.isStatement(classRewriter.insertionPoint));
 
     Node constructor = null;
     JSDocInfo ctorJSDocInfo = null;
@@ -736,13 +737,13 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
       if (member.isMemberFunctionDef() && member.getString().equals("constructor")) {
         ctorJSDocInfo = member.getJSDocInfo();
         constructor = member.getFirstChild().detachFromParent();
-        if (!anonymous) {
+        if (!classRewriter.anonymous) {
           constructor.replaceChild(
               constructor.getFirstChild(), className.cloneNode());
         }
       } else {
         Node qualifiedMemberAccess =
-            getQualifiedMemberAccess(member, classNameAccess, prototypeAccess);
+            classRewriter.getQualifiedMemberAccess(member);
         Node method = member.getLastChild().detachFromParent();
 
         Node assign = IR.assign(qualifiedMemberAccess, method);
@@ -767,38 +768,13 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
         }
 
         Node newNode = NodeUtil.newExpr(assign);
-        insertionPoint.getParent().addChildAfter(newNode, insertionPoint);
-        insertionPoint = newNode;
+        classRewriter.insertionPoint.getParent().addChildAfter(newNode,
+            classRewriter.insertionPoint);
+        classRewriter.insertionPoint = newNode;
       }
     }
 
     Preconditions.checkNotNull(constructor);
-
-    Node memberVarInsertionPoint = null;  // To insert up front initially
-    for (Node member : classMembers.children()) {
-      if (!member.isMemberVariableDef() && !member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE)) {
-        continue;
-      }
-
-      Node newNode;
-      Node qualifiedMemberAccess =
-          getQualifiedMemberAccess(member, classNameAccess, IR.thisNode());
-      Node initializer = member.removeFirstChild();
-      if (initializer != null) {
-        newNode = IR.assign(qualifiedMemberAccess, initializer);
-      } else {
-        newNode = qualifiedMemberAccess;
-      }
-      newNode = NodeUtil.newExpr(newNode);
-      newNode.useSourceInfoIfMissingFromForTree(member);
-      if (member.isStaticMember()) {
-        insertionPoint.getParent().addChildAfter(newNode, insertionPoint);
-        insertionPoint = newNode;
-      } else {
-        constructor.getLastChild().addChildAfter(newNode, memberVarInsertionPoint);
-        memberVarInsertionPoint = newNode;
-      }
-    }
 
     JSDocInfo classJSDoc = classNode.getJSDocInfo();
     JSDocInfoBuilder newInfo = (classJSDoc != null)
@@ -815,7 +791,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
       } else {
         Node inherits = IR.call(
             NodeUtil.newQName(compiler, INHERITS),
-            NodeUtil.newQName(compiler, fullClassName),
+            NodeUtil.newQName(compiler, classRewriter.fullClassName),
             NodeUtil.newQName(compiler, superClassString));
         Node inheritsCall = IR.exprResult(inherits);
         compiler.needsEs6Runtime = true;
@@ -829,7 +805,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
 
         Node copyProps = IR.call(
             NodeUtil.newQName(compiler, COPY_PROP),
-            NodeUtil.newQName(compiler, fullClassName),
+            classRewriter.staticAccess.cloneTree(),
             NodeUtil.newQName(compiler, superClassString));
         compiler.needsEs6Runtime = true;
 
@@ -855,7 +831,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
 
     if (NodeUtil.isStatement(classNode)) {
       constructor.getFirstChild().setString("");
-      Node ctorVar = IR.var(IR.name(fullClassName), constructor);
+      Node ctorVar = IR.var(IR.name(classRewriter.fullClassName), constructor);
       ctorVar.useSourceInfoIfMissingFromForTree(classNode);
       parent.replaceChild(classNode, ctorVar);
     } else {
@@ -884,17 +860,6 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     compiler.reportCodeChange();
   }
 
-  private Node getQualifiedMemberAccess(Node member, Node staticAccess, Node instanceAccess) {
-    Node context = member.isStaticMember() ? staticAccess : instanceAccess;
-    context = context.cloneTree();
-    if (member.isMemberFunctionDef() || member.isMemberVariableDef()) {
-      return NodeUtil.newPropertyAccess(compiler, context, member.getString());
-    } else if (member.isComputedProp()) {
-      return IR.getelem(context, member.removeFirstChild());
-    } else {
-      throw new IllegalStateException("Unexpected class member: " + member);
-    }
-  }
 
   /**
    * Converts ES6 arrow functions to standard anonymous ES3 functions.
@@ -1022,5 +987,28 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
    */
   private void cannotConvertYet(Node n, String feature) {
     compiler.report(JSError.make(n, CANNOT_CONVERT_YET, feature));
+  }
+
+  static class ClassRewriter {
+    AbstractCompiler compiler;
+    /** The fully qualified name of the class, which will be used in the output.
+     May come from the class itself or the LHS of an assignment. */
+    String fullClassName;
+    boolean anonymous;
+    Node staticAccess;
+    Node instanceAccess;
+    Node insertionPoint;
+
+    private Node getQualifiedMemberAccess(Node member) {
+      Node context = member.isStaticMember() ? staticAccess : instanceAccess;
+      context = context.cloneTree();
+      if (member.isMemberFunctionDef() || member.isMemberVariableDef()) {
+        return NodeUtil.newPropertyAccess(compiler, context, member.getString());
+      } else if (member.isComputedProp()) {
+        return IR.getelem(context, member.removeFirstChild());
+      } else {
+        throw new IllegalStateException("Unexpected class member: " + member);
+      }
+    }
   }
 }
