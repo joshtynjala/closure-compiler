@@ -662,65 +662,8 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
    */
   private void visitClass(Node classNode, Node parent) {
     checkClassReassignment(classNode);
-    // Collect Metadata
-    Node className = classNode.getFirstChild();
-    Node superClassName = className.getNext();
-    Node classMembers = classNode.getLastChild();
 
-    // This is a statement node. We insert methods of the
-    // transpiled class after this node.
-    Node insertionPoint;
-
-    if (!superClassName.isEmpty() && !superClassName.isQualifiedName()) {
-      compiler.report(JSError.make(superClassName, DYNAMIC_EXTENDS_TYPE));
-      return;
-    }
-
-    ClassRewriter classRewriter = new ClassRewriter();
-    classRewriter.compiler = compiler;
-
-    // Whether the constructor function in the output should be anonymous.
-    boolean anonymous;
-
-    // If this is a class statement, or a class expression in a simple
-    // assignment or var statement, convert it. In any other case, the
-    // code is too dynamic, so just call cannotConvert.
-    if (NodeUtil.isStatement(classNode)) {
-      classRewriter.fullClassName = className.getString();
-      classRewriter.anonymous = false;
-      classRewriter.insertionPoint = classNode;
-    } else if (parent.isAssign() && parent.getParent().isExprResult()) {
-      // Add members after the EXPR_RESULT node:
-      // example.C = class {}; example.C.prototype.foo = function() {};
-      classRewriter.fullClassName = parent.getFirstChild().getQualifiedName();
-      if (classRewriter.fullClassName == null) {
-        cannotConvert(parent, "Can only convert classes that are declarations or the right hand"
-            + " side of a simple assignment.");
-        return;
-      }
-      classRewriter.anonymous = true;
-      classRewriter.insertionPoint = parent.getParent();
-    } else if (parent.isName()) {
-      // Add members after the 'var' statement.
-      // var C = class {}; C.prototype.foo = function() {};
-      classRewriter.fullClassName =  parent.getString();
-      classRewriter.anonymous = true;
-      classRewriter.insertionPoint = parent.getParent();
-    } else {
-      cannotConvert(parent, "Can only convert classes that are declarations or the right hand"
-            + " side of a simple assignment.");
-      return;
-    }
-
-    boolean useUnique = NodeUtil.isStatement(classNode) && !NodeUtil.isInFunction(classNode);
-    String uniqueFullClassName =
-        useUnique ? getUniqueClassName(classRewriter.fullClassName) : classRewriter.fullClassName;
-    String superClassString = superClassName.getQualifiedName();
-    classRewriter.staticAccess = NodeUtil.newQName(compiler, uniqueFullClassName);
-    classRewriter.instanceAccess =
-        NodeUtil.newPropertyAccess(compiler, classRewriter.staticAccess, "prototype");
-
-    Verify.verify(NodeUtil.isStatement(classRewriter.insertionPoint));
+    ClassRewriter classRewriter = new ClassRewriter(compiler, classNode, parent);
 
     Node constructor = null;
     JSDocInfo ctorJSDocInfo = null;
@@ -991,13 +934,69 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
 
   static class ClassRewriter {
     AbstractCompiler compiler;
-    /** The fully qualified name of the class, which will be used in the output.
-     May come from the class itself or the LHS of an assignment. */
+    /**
+     * The fully qualified name of the class, which will be used in the output. May come from the
+     * class itself or the LHS of an assignment.
+     */
     String fullClassName;
+    /** Whether the constructor function in the output should be anonymous. */
     boolean anonymous;
+    /** This is a statement node. We insert methods of the transpiled class after this node. */
+    Node insertionPoint;
+
     Node staticAccess;
     Node instanceAccess;
-    Node insertionPoint;
+
+    ClassRewriter(AbstractCompiler compiler, Node classNode, Node parent) {
+      Node className = classNode.getFirstChild();
+      Node superClassName = className.getNext();
+      Node classMembers = classNode.getLastChild();
+
+      if (!superClassName.isEmpty() && !superClassName.isQualifiedName()) {
+        compiler.report(JSError.make(superClassName, DYNAMIC_EXTENDS_TYPE));
+        return;
+      }
+
+      // If this is a class statement, or a class expression in a simple
+      // assignment or var statement, convert it. In any other case, the
+      // code is too dynamic, so just call cannotConvert.
+      if (NodeUtil.isStatement(classNode)) {
+        fullClassName = className.getString();
+        anonymous = false;
+        insertionPoint = classNode;
+      } else if (parent.isAssign() && parent.getParent().isExprResult()) {
+        // Add members after the EXPR_RESULT node:
+        // example.C = class {}; example.C.prototype.foo = function() {};
+        fullClassName = parent.getFirstChild().getQualifiedName();
+        if (fullClassName == null) {
+          cannotConvert(parent, "Can only convert classes that are declarations or the right hand"
+              + " side of a simple assignment.");
+          return;
+        }
+        anonymous = true;
+        insertionPoint = parent.getParent();
+      } else if (parent.isName()) {
+        // Add members after the 'var' statement.
+        // var C = class {}; C.prototype.foo = function() {};
+        fullClassName =  parent.getString();
+        anonymous = true;
+        insertionPoint = parent.getParent();
+      } else {
+        cannotConvert(parent, "Can only convert classes that are declarations or the right hand"
+              + " side of a simple assignment.");
+        return;
+      }
+
+      boolean useUnique = NodeUtil.isStatement(classNode) && !NodeUtil.isInFunction(classNode);
+      String uniqueFullClassName =
+          useUnique ? getUniqueClassName(fullClassName) : fullClassName;
+      String superClassString = superClassName.getQualifiedName();
+      staticAccess = NodeUtil.newQName(compiler, uniqueFullClassName);
+      instanceAccess =
+          NodeUtil.newPropertyAccess(compiler, staticAccess, "prototype");
+
+      Verify.verify(NodeUtil.isStatement(insertionPoint));
+    }
 
     private Node getQualifiedMemberAccess(Node member) {
       Node context = member.isStaticMember() ? staticAccess : instanceAccess;
