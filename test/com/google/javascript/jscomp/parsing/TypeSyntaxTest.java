@@ -39,6 +39,16 @@ import com.google.javascript.rhino.Token;
 
 import junit.framework.TestCase;
 
+/**
+ * Tests the AST generated when parsing code that includes type declarations
+ * in the syntax.
+ * <p>
+ * (It tests both parsing from source to a parse tree, and conversion from a
+ * parse tree to an AST in {@link IRFactory}
+ * and {@link TypeDeclarationsIRFactory}.)
+ *
+ * @author martinprobst@google.com (Martin Probst)
+ */
 public class TypeSyntaxTest extends TestCase {
 
   private TestErrorManager testErrorManager;
@@ -117,8 +127,14 @@ public class TypeSyntaxTest extends TestCase {
   }
 
   public void testFunctionReturn() {
+<<<<<<< HEAD
     Node fn = parse("function foo(): string {\n  return'hello';\n}").getFirstChild();
     assertDeclaredType("string type", stringType(), fn);
+=======
+    Node fn = parse("function foo(): string {\n  return 'hello';\n}").getFirstChild();
+    Node fnType = fn.getDeclaredTypeExpression();
+    assertTreeEquals("string type", TypeDeclarationsIRFactory.stringType(), fnType);
+>>>>>>> type-arguments
   }
 
   public void testFunctionReturn_arrow() {
@@ -134,7 +150,7 @@ public class TypeSyntaxTest extends TestCase {
 
   public void testFunctionReturn_typeInJsdocOnly() throws Exception {
     parse("function /** string */ foo() { return 'hello'; }",
-        "function/** string */foo() {\n  return'hello';\n}");
+        "function/** string */foo() {\n  return 'hello';\n}");
   }
 
   public void testCompositeType() {

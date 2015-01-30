@@ -507,6 +507,13 @@ public class CommandLineRunner extends
         + "ECMASCRIPT6_TYPED (experimental)")
     private String languageOut = "";
 
+    @Option(name = "--allow_es6_out",
+        hidden = true,
+        usage = "Experimental: Allows ES6 language_out, for compiling "
+        + "ES6 to ES6 as well as transpiling to ES6 from lower versions. "
+        + "Enabling this flag may cause the compiler to crash.")
+    private boolean allowEs6Out = false;
+
     @Option(name = "--version",
         hidden = true,
         handler = BooleanOptionHandler.class,
@@ -1051,8 +1058,7 @@ public class CommandLineRunner extends
           .setWarningsWhitelistFile(flags.warningsWhitelistFile)
           .setAngularPass(flags.angularPass)
           .setTracerMode(flags.tracerMode)
-          .setNewTypeInference(flags.useNewTypeInference)
-          .setRenamePrefixNamespace(flags.renamePrefixNamespace);
+          .setNewTypeInference(flags.useNewTypeInference);
     }
     errorStream = null;
   }
@@ -1072,6 +1078,7 @@ public class CommandLineRunner extends
       options.setCodingConvention(new ClosureCodingConvention());
     }
 
+    options.setAllowEs6Out(flags.allowEs6Out);
     options.setExtraAnnotationNames(flags.extraAnnotationName);
 
     CompilationLevel level = flags.compilationLevelParsed;

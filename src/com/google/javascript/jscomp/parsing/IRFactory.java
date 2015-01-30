@@ -125,7 +125,7 @@ import java.util.regex.Pattern;
 /**
  * IRFactory transforms the external AST to the internal AST.
  */
-class NewIRFactory {
+class IRFactory {
 
   static final String GETTER_ERROR_MESSAGE =
       "getters are not supported in older versions of JavaScript. " +
@@ -237,7 +237,7 @@ class NewIRFactory {
   private boolean hasTypeSyntax = false;
   private boolean hasJsDocTypeAnnotations = false;
 
-  private NewIRFactory(String sourceString,
+  private IRFactory(String sourceString,
                     StaticSourceFile sourceFile,
                     Config config,
                     ErrorReporter errorReporter,
@@ -305,7 +305,7 @@ class NewIRFactory {
                                    String sourceString,
                                    Config config,
                                    ErrorReporter errorReporter) {
-    NewIRFactory irFactory = new NewIRFactory(sourceString, sourceFile,
+    IRFactory irFactory = new IRFactory(sourceString, sourceFile,
         config, errorReporter, tree.sourceComments);
 
     // don't call transform as we don't want standard jsdoc handling.
@@ -1018,7 +1018,7 @@ class NewIRFactory {
     return transformDispatcher.process(node);
   }
 
-  private class TransformDispatcher extends NewTypeSafeDispatcher<Node> {
+  private class TransformDispatcher {
 
     /**
      * Transforms the given node and then sets its type to Token.STRING if it
@@ -1047,22 +1047,18 @@ class NewIRFactory {
       return ret;
     }
 
-    @Override
     Node processComprehension(ComprehensionTree tree) {
       return unsupportedLanguageFeature(tree, "array/generator comprehensions");
     }
 
-    @Override
     Node processComprehensionFor(ComprehensionForTree tree) {
       return unsupportedLanguageFeature(tree, "array/generator comprehensions");
     }
 
-    @Override
     Node processComprehensionIf(ComprehensionIfTree tree) {
       return unsupportedLanguageFeature(tree, "array/generator comprehensions");
     }
 
-    @Override
     Node processArrayLiteral(ArrayLiteralExpressionTree tree) {
       Node node = newNode(Token.ARRAYLIT);
       for (ParseTree child : tree.elements) {
@@ -1072,7 +1068,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processArrayPattern(ArrayPatternTree tree) {
       maybeWarnEs6Feature(tree, "destructuring");
 
@@ -1083,7 +1078,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processObjectPattern(ObjectPatternTree tree) {
       maybeWarnEs6Feature(tree, "destructuring");
 
@@ -1094,12 +1088,10 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processAssignmentRestElement(AssignmentRestElementTree tree) {
       return newStringNode(Token.REST, tree.identifier.value);
     }
 
-    @Override
     Node processAstRoot(ProgramTree rootNode) {
       Node node = newNode(Token.SCRIPT);
       for (ParseTree child : rootNode.sourceElements) {
@@ -1145,7 +1137,6 @@ class NewIRFactory {
           ALLOWED_DIRECTIVES.contains(n.getFirstChild().getString());
     }
 
-    @Override
     Node processBlock(BlockTree blockNode) {
       Node node = newNode(Token.BLOCK);
       for (ParseTree child : blockNode.statements) {
@@ -1154,7 +1145,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processBreakStatement(BreakStatementTree statementNode) {
       Node node = newNode(Token.BREAK);
       if (statementNode.getLabel() != null) {
@@ -1170,7 +1160,6 @@ class NewIRFactory {
       return label;
     }
 
-    @Override
     Node processConditionalExpression(ConditionalExpressionTree exprNode) {
       return newNode(
           Token.HOOK,
@@ -1179,7 +1168,6 @@ class NewIRFactory {
           transform(exprNode.right));
     }
 
-    @Override
     Node processContinueStatement(ContinueStatementTree statementNode) {
       Node node = newNode(Token.CONTINUE);
       if (statementNode.getLabel() != null) {
@@ -1189,7 +1177,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processDoLoop(DoWhileStatementTree loopNode) {
       return newNode(
           Token.DO,
@@ -1197,7 +1184,6 @@ class NewIRFactory {
           transform(loopNode.condition));
     }
 
-    @Override
     Node processElementGet(MemberLookupExpressionTree getNode) {
       return newNode(
           Token.GETELEM,
@@ -1205,19 +1191,16 @@ class NewIRFactory {
           transform(getNode.memberExpression));
     }
 
-    @Override
     Node processEmptyStatement(EmptyStatementTree exprNode) {
       return newNode(Token.EMPTY);
     }
 
-    @Override
     Node processExpressionStatement(ExpressionStatementTree statementNode) {
       Node node = newNode(Token.EXPR_RESULT);
       node.addChildToBack(transform(statementNode.expression));
       return node;
     }
 
-    @Override
     Node processForInLoop(ForInStatementTree loopNode) {
       Node initializer = transform(loopNode.initializer);
       ImmutableSet<Integer> invalidInitializers =
@@ -1233,7 +1216,6 @@ class NewIRFactory {
           transformBlock(loopNode.body));
     }
 
-    @Override
     Node processForOf(ForOfStatementTree loopNode) {
       Node initializer = transform(loopNode.initializer);
       ImmutableSet<Integer> invalidInitializers =
@@ -1249,7 +1231,6 @@ class NewIRFactory {
           transformBlock(loopNode.body));
     }
 
-    @Override
     Node processForLoop(ForStatementTree loopNode) {
       Node node = newNode(
           Token.FOR,
@@ -1278,7 +1259,6 @@ class NewIRFactory {
       return processName(token);
     }
 
-    @Override
     Node processFunctionCall(CallExpressionTree callNode) {
       Node node = newNode(Token.CALL,
                            transform(callNode.operand));
@@ -1288,7 +1268,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processFunction(FunctionDeclarationTree functionTree) {
       boolean isDeclaration = (functionTree.kind == FunctionDeclarationTree.Kind.DECLARATION);
       boolean isMember = (functionTree.kind == FunctionDeclarationTree.Kind.MEMBER);
@@ -1378,7 +1357,6 @@ class NewIRFactory {
       return result;
     }
 
-    @Override
     Node processFormalParameterList(FormalParameterListTree tree) {
       Node params = newNode(Token.PARAM_LIST);
       for (ParseTree param : tree.parameters) {
@@ -1393,28 +1371,24 @@ class NewIRFactory {
       return params;
     }
 
-    @Override
     Node processDefaultParameter(DefaultParameterTree tree) {
       maybeWarnEs6Feature(tree, "default parameters");
       return newNode(Token.DEFAULT_VALUE,
           transform(tree.lhs), transform(tree.defaultValue));
     }
 
-    @Override
     Node processRestParameter(RestParameterTree tree) {
       maybeWarnEs6Feature(tree, "rest parameters");
 
       return newStringNode(Token.REST, tree.identifier.value);
     }
 
-    @Override
     Node processSpreadExpression(SpreadExpressionTree tree) {
       maybeWarnEs6Feature(tree, "spread expression");
 
       return newNode(Token.SPREAD, transform(tree.expression));
     }
 
-    @Override
     Node processIfStatement(IfStatementTree statementNode) {
       Node node = newNode(Token.IF);
       node.addChildToBack(transform(statementNode.condition));
@@ -1425,7 +1399,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processBinaryExpression(BinaryOperatorTree exprNode) {
       return newNode(
           transformBinaryTokenType(exprNode.operator.type),
@@ -1433,24 +1406,20 @@ class NewIRFactory {
           transform(exprNode.right));
     }
 
-    @Override
     Node processDebuggerStatement(DebuggerStatementTree node) {
       return newNode(Token.DEBUGGER);
     }
 
-    @Override
     Node processThisExpression(ThisExpressionTree node) {
       return newNode(Token.THIS);
     }
 
-    @Override
     Node processLabeledStatement(LabelledStatementTree labelTree) {
       return newNode(Token.LABEL,
           transformLabelName(labelTree.name),
           transform(labelTree.statement));
     }
 
-    @Override
     Node processName(IdentifierExpressionTree nameNode) {
       return processName(nameNode, false);
     }
@@ -1535,7 +1504,6 @@ class NewIRFactory {
       return reservedKeywords != null && reservedKeywords.contains(identifier);
     }
 
-    @Override
     Node processNewExpression(NewExpressionTree exprNode) {
       Node node = newNode(
           Token.NEW,
@@ -1548,7 +1516,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processNumberLiteral(LiteralExpressionTree literalNode) {
       double value = normalizeNumber(literalNode.literalToken.asLiteral());
       Node number = newNumberNode(value);
@@ -1557,7 +1524,6 @@ class NewIRFactory {
       return number;
     }
 
-    @Override
     Node processObjectLiteral(ObjectLiteralExpressionTree objTree) {
       Node node = newNode(Token.OBJECTLIT);
       boolean maybeWarn = false;
@@ -1592,7 +1558,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processComputedPropertyDefinition(ComputedPropertyDefinitionTree tree) {
       maybeWarnEs6Feature(tree, "computed property");
 
@@ -1600,7 +1565,6 @@ class NewIRFactory {
           transform(tree.property), transform(tree.value));
     }
 
-    @Override
     Node processComputedPropertyMemberVariable(ComputedPropertyMemberVariableTree tree) {
       maybeWarnEs6Feature(tree, "computed property");
       maybeWarnTypeSyntax(tree);
@@ -1615,7 +1579,6 @@ class NewIRFactory {
       return n;
     }
 
-    @Override
     Node processComputedPropertyMethod(ComputedPropertyMethodTree tree) {
       maybeWarnEs6Feature(tree, "computed property");
 
@@ -1628,7 +1591,6 @@ class NewIRFactory {
       return n;
     }
 
-    @Override
     Node processComputedPropertyGetter(ComputedPropertyGetterTree tree) {
       maybeWarnEs6Feature(tree, "computed property");
 
@@ -1641,7 +1603,6 @@ class NewIRFactory {
       return n;
     }
 
-    @Override
     Node processComputedPropertySetter(ComputedPropertySetterTree tree) {
       maybeWarnEs6Feature(tree, "computed property");
 
@@ -1655,7 +1616,6 @@ class NewIRFactory {
       return n;
     }
 
-    @Override
     Node processGetAccessor(GetAccessorTree tree) {
       Node key = processObjectLitKeyAsString(tree.propertyName);
       key.setType(Token.GETTER_DEF);
@@ -1671,7 +1631,6 @@ class NewIRFactory {
       return key;
     }
 
-    @Override
     Node processSetAccessor(SetAccessorTree tree) {
       Node key = processObjectLitKeyAsString(tree.propertyName);
       key.setType(Token.SETTER_DEF);
@@ -1688,7 +1647,6 @@ class NewIRFactory {
       return key;
     }
 
-    @Override
     Node processPropertyNameAssignment(PropertyNameAssignmentTree tree) {
       Node key = processObjectLitKeyAsString(tree.name);
       key.setType(Token.STRING_KEY);
@@ -1706,12 +1664,10 @@ class NewIRFactory {
       }
     }
 
-    @Override
     Node processParenthesizedExpression(ParenExpressionTree exprNode) {
       return transform(exprNode.expression);
     }
 
-    @Override
     Node processPropertyGet(MemberExpressionTree getNode) {
       Node leftChild = transform(getNode.operand);
       IdentifierToken nodeProp = getNode.memberName;
@@ -1726,7 +1682,6 @@ class NewIRFactory {
       return newNode(Token.GETPROP, leftChild, rightChild);
     }
 
-    @Override
     Node processRegExpLiteral(LiteralExpressionTree literalTree) {
       LiteralToken token = literalTree.literalToken.asLiteral();
       Node literalStringNode = newStringNode(normalizeRegex(token));
@@ -1768,7 +1723,6 @@ class NewIRFactory {
       }
     }
 
-    @Override
     Node processReturnStatement(ReturnStatementTree statementNode) {
       Node node = newNode(Token.RETURN);
       if (statementNode.expression != null) {
@@ -1777,7 +1731,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processStringLiteral(LiteralExpressionTree literalTree) {
       LiteralToken token = literalTree.literalToken.asLiteral();
 
@@ -1807,7 +1760,6 @@ class NewIRFactory {
       return n;
     }
 
-    @Override
     Node processTemplateLiteral(TemplateLiteralExpressionTree tree) {
       maybeWarnEs6Feature(tree, "template literals");
       Node node = tree.operand == null
@@ -1819,17 +1771,14 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processTemplateLiteralPortion(TemplateLiteralPortionTree tree) {
       return processTemplateLiteralToken(tree.value.asLiteral());
     }
 
-    @Override
     Node processTemplateSubstitution(TemplateSubstitutionTree tree) {
       return newNode(Token.TEMPLATELIT_SUB, transform(tree.expression));
     }
 
-    @Override
     Node processSwitchCase(CaseClauseTree caseNode) {
       ParseTree expr = caseNode.expression;
       Node node = newNode(Token.CASE, transform(expr));
@@ -1845,7 +1794,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processSwitchDefault(DefaultClauseTree caseNode) {
       Node node = newNode(Token.DEFAULT_CASE);
       Node block = newNode(Token.BLOCK);
@@ -1860,7 +1808,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processSwitchStatement(SwitchStatementTree statementNode) {
       Node node = newNode(Token.SWITCH,
           transform(statementNode.expression));
@@ -1870,13 +1817,11 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processThrowStatement(ThrowStatementTree statementNode) {
       return newNode(Token.THROW,
           transform(statementNode.value));
     }
 
-    @Override
     Node processTryStatement(TryStatementTree statementNode) {
       Node node = newNode(Token.TRY,
           transformBlock(statementNode.body));
@@ -1909,19 +1854,16 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processCatchClause(CatchTree clauseNode) {
       return newNode(Token.CATCH,
           transform(clauseNode.exception),
           transformBlock(clauseNode.catchBody));
     }
 
-    @Override
     Node processFinally(FinallyTree finallyNode) {
       return transformBlock(finallyNode.block);
     }
 
-    @Override
     Node processUnaryExpression(UnaryExpressionTree exprNode) {
       int type = transformUnaryTokenType(exprNode.operator.type);
       Node operand = transform(exprNode.operand);
@@ -1945,7 +1887,6 @@ class NewIRFactory {
       }
     }
 
-    @Override
     Node processPostfixExpression(PostfixExpressionTree exprNode) {
       int type = transformPostfixTokenType(exprNode.operator.type);
       Node node = newNode(type, transform(exprNode.operand));
@@ -1953,13 +1894,11 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processVariableStatement(VariableStatementTree stmt) {
       // skip the special handling so the doc is attached in the right place.
       return justTransform(stmt.declarations);
     }
 
-    @Override
     Node processVariableDeclarationList(VariableDeclarationListTree decl) {
       int declType;
       switch (decl.declarationType) {
@@ -1997,7 +1936,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processVariableDeclaration(VariableDeclarationTree decl) {
       Node node = transformNodeWithInlineJsDoc(decl.lvalue, true);
       if (decl.initializer != null) {
@@ -2008,7 +1946,6 @@ class NewIRFactory {
       return node;
     }
 
-    @Override
     Node processWhileLoop(WhileStatementTree stmt) {
       return newNode(
           Token.WHILE,
@@ -2016,7 +1953,6 @@ class NewIRFactory {
           transformBlock(stmt.body));
     }
 
-    @Override
     Node processWithStatement(WithStatementTree stmt) {
       return newNode(
           Token.WITH,
@@ -2024,7 +1960,6 @@ class NewIRFactory {
           transformBlock(stmt.body));
     }
 
-    @Override
     Node processMissingExpression(MissingPrimaryExpressionTree tree) {
       // This will already have been reported as an error by the parser.
       // Try to create something valid that ide mode might be able to
@@ -2040,7 +1975,6 @@ class NewIRFactory {
       return newStringNode(Token.NAME, "__missing_expression__");
     }
 
-    @Override
     Node processIllegalToken(ParseTree node) {
       errorReporter.error(
           "Unsupported syntax: " + node.type, sourceName, lineno(node), 0);
@@ -2061,25 +1995,21 @@ class NewIRFactory {
           lineno(node), 0);
     }
 
-    @Override
     Node processBooleanLiteral(LiteralExpressionTree literal) {
       return newNode(transformBooleanTokenType(
           literal.literalToken.type));
     }
 
-    @Override
     Node processNullLiteral(LiteralExpressionTree literal) {
       return newNode(Token.NULL);
     }
 
-    @Override
     Node processNull(NullTree literal) {
       // NOTE: This is not a NULL literal but a placeholder node such as in
       // an array with "holes".
       return newNode(Token.EMPTY);
     }
 
-    @Override
     Node processCommaExpression(CommaExpressionTree tree) {
       Node root = newNode(Token.COMMA);
       SourcePosition start = tree.expressions.get(0).location.start;
@@ -2098,7 +2028,6 @@ class NewIRFactory {
       return root;
     }
 
-    @Override
     Node processClassDeclaration(ClassDeclarationTree tree) {
       maybeWarnEs6Feature(tree, "class");
 
@@ -2114,13 +2043,11 @@ class NewIRFactory {
       return newNode(Token.CLASS, name, superClass, body);
     }
 
-    @Override
     Node processSuper(SuperExpressionTree tree) {
       maybeWarnEs6Feature(tree, "super");
       return newNode(Token.SUPER);
     }
 
-    @Override
     Node processMemberVariable(MemberVariableTree tree) {
       Node member = newStringNode(Token.MEMBER_VARIABLE_DEF, tree.name.value);
       maybeProcessType(member, tree.declaredType);
@@ -2131,7 +2058,6 @@ class NewIRFactory {
       return member;
     }
 
-    @Override
     Node processYield(YieldExpressionTree tree) {
       Node yield = new Node(Token.YIELD);
       if (tree.expression != null) {
@@ -2141,7 +2067,6 @@ class NewIRFactory {
       return yield;
     }
 
-    @Override
     Node processExportDecl(ExportDeclarationTree tree) {
       maybeWarnEs6Feature(tree, "modules");
       Node decls = null;
@@ -2170,7 +2095,6 @@ class NewIRFactory {
       return export;
     }
 
-    @Override
     Node processExportSpec(ExportSpecifierTree tree) {
       Node exportSpec = newNode(Token.EXPORT_SPEC,
           processName(tree.importedName));
@@ -2180,7 +2104,6 @@ class NewIRFactory {
       return exportSpec;
     }
 
-    @Override
     Node processImportDecl(ImportDeclarationTree tree) {
       maybeWarnEs6Feature(tree, "modules");
 
@@ -2193,7 +2116,6 @@ class NewIRFactory {
       return newNode(Token.IMPORT, firstChild, secondChild, thirdChild);
     }
 
-    @Override
     Node processImportSpec(ImportSpecifierTree tree) {
       Node importSpec = newNode(Token.IMPORT_SPEC,
           processName(tree.importedName));
@@ -2203,7 +2125,6 @@ class NewIRFactory {
       return importSpec;
     }
 
-    @Override
     Node processModuleImport(ModuleImportTree tree) {
       maybeWarnEs6Feature(tree, "modules");
       Node module = newNode(Token.MODULE,
@@ -2212,7 +2133,6 @@ class NewIRFactory {
       return module;
     }
 
-    @Override
     Node processTypeName(TypeNameTree tree) {
       Node typeNode;
       if (tree.segments.size() == 1) {
@@ -2248,7 +2168,6 @@ class NewIRFactory {
       return typeNode;
     }
 
-    @Override
     Node processTypedParameter(TypedParameterTree typeAnnotation) {
       maybeWarnTypeSyntax(typeAnnotation);
       Node param = process(typeAnnotation.param);
@@ -2270,7 +2189,6 @@ class NewIRFactory {
       return process(typeTree);
     }
 
-    @Override
     Node processParameterizedType(ParameterizedTypeTree tree) {
       ImmutableList.Builder<TypeDeclarationNode> arguments = ImmutableList.builder();
       for (ParseTree arg : tree.typeArguments) {
@@ -2280,7 +2198,6 @@ class NewIRFactory {
       return TypeDeclarationsIRFactory.parameterizedType(typeName, arguments.build());
     }
 
-    @Override
     Node processArrayType(ArrayTypeTree tree) {
       return TypeDeclarationsIRFactory.arrayType(process(tree.elementType));
     }
@@ -2322,13 +2239,206 @@ class NewIRFactory {
       recordTypeSyntax(node.location);
     }
 
-    @Override
     Node unsupportedLanguageFeature(ParseTree node, String feature) {
       errorReporter.error(
           "unsupported language feature: " + feature,
           sourceName,
           lineno(node), charno(node));
       return createMissingExpressionNode();
+    }
+
+    Node processLiteralExpression(LiteralExpressionTree expr) {
+      switch (expr.literalToken.type) {
+        case NUMBER:
+          return processNumberLiteral(expr);
+        case STRING:
+          return processStringLiteral(expr);
+        case FALSE:
+        case TRUE:
+          return processBooleanLiteral(expr);
+        case NULL:
+          return processNullLiteral(expr);
+        case REGULAR_EXPRESSION:
+          return processRegExpLiteral(expr);
+        default:
+          throw new IllegalStateException("Unexpected literal type: "
+              + expr.literalToken.getClass() + " type: "
+              + expr.literalToken.type);
+      }
+    }
+
+    public Node process(ParseTree node) {
+      switch (node.type) {
+        case BINARY_OPERATOR:
+          return processBinaryExpression(node.asBinaryOperator());
+        case ARRAY_LITERAL_EXPRESSION:
+          return processArrayLiteral(node.asArrayLiteralExpression());
+        case TEMPLATE_LITERAL_EXPRESSION:
+          return processTemplateLiteral(node.asTemplateLiteralExpression());
+        case TEMPLATE_LITERAL_PORTION:
+          return processTemplateLiteralPortion(node.asTemplateLiteralPortion());
+        case TEMPLATE_SUBSTITUTION:
+          return processTemplateSubstitution(node.asTemplateSubstitution());
+        case UNARY_EXPRESSION:
+          return processUnaryExpression(node.asUnaryExpression());
+        case BLOCK:
+          return processBlock(node.asBlock());
+        case BREAK_STATEMENT:
+          return processBreakStatement(node.asBreakStatement());
+        case CALL_EXPRESSION:
+          return processFunctionCall(node.asCallExpression());
+        case CASE_CLAUSE:
+          return processSwitchCase(node.asCaseClause());
+        case DEFAULT_CLAUSE:
+          return processSwitchDefault(node.asDefaultClause());
+        case CATCH:
+          return processCatchClause(node.asCatch());
+        case CONTINUE_STATEMENT:
+          return processContinueStatement(node.asContinueStatement());
+        case DO_WHILE_STATEMENT:
+          return processDoLoop(node.asDoWhileStatement());
+        case EMPTY_STATEMENT:
+          return processEmptyStatement(node.asEmptyStatement());
+        case EXPRESSION_STATEMENT:
+          return processExpressionStatement(node.asExpressionStatement());
+        case DEBUGGER_STATEMENT:
+          return processDebuggerStatement(node.asDebuggerStatement());
+        case THIS_EXPRESSION:
+          return processThisExpression(node.asThisExpression());
+        case FOR_STATEMENT:
+          return processForLoop(node.asForStatement());
+        case FOR_IN_STATEMENT:
+          return processForInLoop(node.asForInStatement());
+        case FUNCTION_DECLARATION:
+          return processFunction(node.asFunctionDeclaration());
+        case MEMBER_LOOKUP_EXPRESSION:
+          return processElementGet(node.asMemberLookupExpression());
+        case MEMBER_EXPRESSION:
+          return processPropertyGet(node.asMemberExpression());
+        case CONDITIONAL_EXPRESSION:
+          return processConditionalExpression(node.asConditionalExpression());
+        case IF_STATEMENT:
+          return processIfStatement(node.asIfStatement());
+        case LABELLED_STATEMENT:
+          return processLabeledStatement(node.asLabelledStatement());
+        case PAREN_EXPRESSION:
+          return processParenthesizedExpression(node.asParenExpression());
+        case IDENTIFIER_EXPRESSION:
+          return processName(node.asIdentifierExpression());
+        case NEW_EXPRESSION:
+          return processNewExpression(node.asNewExpression());
+        case OBJECT_LITERAL_EXPRESSION:
+          return processObjectLiteral(node.asObjectLiteralExpression());
+        case COMPUTED_PROPERTY_DEFINITION:
+          return processComputedPropertyDefinition(node.asComputedPropertyDefinition());
+        case COMPUTED_PROPERTY_GETTER:
+          return processComputedPropertyGetter(node.asComputedPropertyGetter());
+        case COMPUTED_PROPERTY_METHOD:
+          return processComputedPropertyMethod(node.asComputedPropertyMethod());
+        case COMPUTED_PROPERTY_SETTER:
+          return processComputedPropertySetter(node.asComputedPropertySetter());
+        case RETURN_STATEMENT:
+          return processReturnStatement(node.asReturnStatement());
+        case POSTFIX_EXPRESSION:
+          return processPostfixExpression(node.asPostfixExpression());
+        case PROGRAM:
+          return processAstRoot(node.asProgram());
+        case LITERAL_EXPRESSION: // STRING, NUMBER, TRUE, FALSE, NULL, REGEXP
+          return processLiteralExpression(node.asLiteralExpression());
+        case SWITCH_STATEMENT:
+          return processSwitchStatement(node.asSwitchStatement());
+        case THROW_STATEMENT:
+          return processThrowStatement(node.asThrowStatement());
+        case TRY_STATEMENT:
+          return processTryStatement(node.asTryStatement());
+        case VARIABLE_STATEMENT: // var const let
+          return processVariableStatement(node.asVariableStatement());
+        case VARIABLE_DECLARATION_LIST:
+          return processVariableDeclarationList(node.asVariableDeclarationList());
+        case VARIABLE_DECLARATION:
+          return processVariableDeclaration(node.asVariableDeclaration());
+        case WHILE_STATEMENT:
+          return processWhileLoop(node.asWhileStatement());
+        case WITH_STATEMENT:
+          return processWithStatement(node.asWithStatement());
+
+        case COMMA_EXPRESSION:
+          return processCommaExpression(node.asCommaExpression());
+        case NULL:  // this is not the null literal
+          return processNull(node.asNull());
+        case FINALLY:
+          return processFinally(node.asFinally());
+
+        case MISSING_PRIMARY_EXPRESSION:
+          return processMissingExpression(node.asMissingPrimaryExpression());
+
+        case PROPERTY_NAME_ASSIGNMENT:
+          return processPropertyNameAssignment(node.asPropertyNameAssignment());
+        case GET_ACCESSOR:
+          return processGetAccessor(node.asGetAccessor());
+        case SET_ACCESSOR:
+          return processSetAccessor(node.asSetAccessor());
+        case FORMAL_PARAMETER_LIST:
+          return processFormalParameterList(node.asFormalParameterList());
+
+        case CLASS_DECLARATION:
+          return processClassDeclaration(node.asClassDeclaration());
+        case SUPER_EXPRESSION:
+          return processSuper(node.asSuperExpression());
+        case YIELD_EXPRESSION:
+          return processYield(node.asYieldStatement());
+        case FOR_OF_STATEMENT:
+          return processForOf(node.asForOfStatement());
+
+        case EXPORT_DECLARATION:
+          return processExportDecl(node.asExportDeclaration());
+        case EXPORT_SPECIFIER:
+          return processExportSpec(node.asExportSpecifier());
+        case IMPORT_DECLARATION:
+          return processImportDecl(node.asImportDeclaration());
+        case IMPORT_SPECIFIER:
+          return processImportSpec(node.asImportSpecifier());
+        case MODULE_IMPORT:
+          return processModuleImport(node.asModuleImport());
+
+        case ARRAY_PATTERN:
+          return processArrayPattern(node.asArrayPattern());
+        case OBJECT_PATTERN:
+          return processObjectPattern(node.asObjectPattern());
+        case ASSIGNMENT_REST_ELEMENT:
+          return processAssignmentRestElement(node.asAssignmentRestElement());
+
+        case COMPREHENSION:
+          return processComprehension(node.asComprehension());
+        case COMPREHENSION_FOR:
+          return processComprehensionFor(node.asComprehensionFor());
+        case COMPREHENSION_IF:
+          return processComprehensionIf(node.asComprehensionIf());
+
+        case DEFAULT_PARAMETER:
+          return processDefaultParameter(node.asDefaultParameter());
+        case REST_PARAMETER:
+          return processRestParameter(node.asRestParameter());
+        case SPREAD_EXPRESSION:
+          return processSpreadExpression(node.asSpreadExpression());
+
+          // TODO(johnlenz): handle these or remove parser support
+        case ARGUMENT_LIST:
+          break;
+
+        case TYPE_NAME:
+          return processTypeName(node.asTypeName());
+        case TYPE_ANNOTATION:
+          return processTypedParameter(node.asTypedParameter());
+        case PARAMETERIZED_TYPE_TREE:
+          return processParameterizedType(node.asParameterizedType());
+        case ARRAY_TYPE:
+          return processArrayType(node.asArrayType());
+
+        default:
+          break;
+      }
+      return processIllegalToken(node);
     }
   }
 
