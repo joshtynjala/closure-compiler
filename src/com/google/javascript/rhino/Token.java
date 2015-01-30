@@ -190,6 +190,9 @@ public class Token {
 
         DEFAULT_VALUE   = 178, // Formal parameter or destructuring element
                                // with a default value
+
+        // ECMAScript 6 Typed AST Nodes.
+
         MEMBER_VARIABLE_DEF     = 179,
 
         // Used by type declaration ASTs
@@ -352,7 +355,7 @@ public class Token {
           case OBJECT_PATTERN:  return "OBJECT_PATTERN";
           case CLASS:           return "CLASS";
           case CLASS_MEMBERS:   return "CLASS_MEMBERS";
-          case MEMBER_FUNCTION_DEF:    return "MEMBER_DEF";
+          case MEMBER_FUNCTION_DEF:    return "MEMBER_FUNCTION_DEF";
           case SUPER:           return "SUPER";
           case LET:             return "LET";
           case FOR_OF:          return "FOR_OF";
