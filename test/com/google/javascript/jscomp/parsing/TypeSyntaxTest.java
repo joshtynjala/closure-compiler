@@ -127,14 +127,8 @@ public class TypeSyntaxTest extends TestCase {
   }
 
   public void testFunctionReturn() {
-<<<<<<< HEAD
-    Node fn = parse("function foo(): string {\n  return'hello';\n}").getFirstChild();
-    assertDeclaredType("string type", stringType(), fn);
-=======
     Node fn = parse("function foo(): string {\n  return 'hello';\n}").getFirstChild();
-    Node fnType = fn.getDeclaredTypeExpression();
-    assertTreeEquals("string type", TypeDeclarationsIRFactory.stringType(), fnType);
->>>>>>> type-arguments
+    assertDeclaredType("string type", stringType(), fn);
   }
 
   public void testFunctionReturn_arrow() {
