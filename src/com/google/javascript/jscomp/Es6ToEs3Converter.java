@@ -662,12 +662,32 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
    */
   private void visitClass(Node classNode, Node parent) {
     checkClassReassignment(classNode);
+    // Collect Metadata
+    ClassDeclarationMetadata metadata = ClassDeclarationMetadata.create(classNode, parent);
 
-    ClassRewriter classRewriter = new ClassRewriter(compiler, classNode, parent);
+    if (metadata == null || metadata.fullClassName == null) {
+      cannotConvert(parent, "Can only convert classes that are declarations or the right hand"
+          + " side of a simple assignment.");
+      return;
+    }
+    if (!metadata.superClassName.isEmpty() && !metadata.superClassName.isQualifiedName()) {
+      compiler.report(JSError.make(metadata.superClassName, DYNAMIC_EXTENDS_TYPE));
+      return;
+    }
+
+    boolean useUnique = NodeUtil.isStatement(classNode) && !NodeUtil.isInFunction(classNode);
+    String uniqueFullClassName =
+        useUnique ? getUniqueClassName(metadata.fullClassName) : metadata.fullClassName;
+    String superClassString = metadata.superClassName.getQualifiedName();
+    Node classNameAccess = NodeUtil.newQName(compiler, uniqueFullClassName);
+    Node prototypeAccess = NodeUtil.newPropertyAccess(compiler, classNameAccess, "prototype");
+
+    Verify.verify(NodeUtil.isStatement(metadata.insertionPoint));
 
     Node constructor = null;
     JSDocInfo ctorJSDocInfo = null;
     // Process all members of the class
+    Node classMembers = classNode.getLastChild();
     for (Node member : classMembers.children()) {
       if (member.isEmpty()) {
         continue;
@@ -680,13 +700,13 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
       if (member.isMemberFunctionDef() && member.getString().equals("constructor")) {
         ctorJSDocInfo = member.getJSDocInfo();
         constructor = member.getFirstChild().detachFromParent();
-        if (!classRewriter.anonymous) {
+        if (!metadata.anonymous) {
           constructor.replaceChild(
-              constructor.getFirstChild(), className.cloneNode());
+              constructor.getFirstChild(), metadata.className.cloneNode());
         }
       } else {
         Node qualifiedMemberAccess =
-            classRewriter.getQualifiedMemberAccess(member);
+            getQualifiedMemberAccess(compiler, member, classNameAccess, prototypeAccess);
         Node method = member.getLastChild().detachFromParent();
 
         Node assign = IR.assign(qualifiedMemberAccess, method);
@@ -711,9 +731,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
         }
 
         Node newNode = NodeUtil.newExpr(assign);
-        classRewriter.insertionPoint.getParent().addChildAfter(newNode,
-            classRewriter.insertionPoint);
-        classRewriter.insertionPoint = newNode;
+        metadata.insertStaticMember(newNode);
       }
     }
 
@@ -725,16 +743,15 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
         : new JSDocInfoBuilder(true);
 
     newInfo.recordConstructor();
-    if (!superClassName.isEmpty()) {
-
+    if (!metadata.superClassName.isEmpty()) {
       if (newInfo.isInterfaceRecorded()) {
         newInfo.recordExtendedInterface(new JSTypeExpression(new Node(Token.BANG,
             IR.string(superClassString)),
-            superClassName.getSourceFileName()));
+            metadata.superClassName.getSourceFileName()));
       } else {
         Node inherits = IR.call(
             NodeUtil.newQName(compiler, INHERITS),
-            NodeUtil.newQName(compiler, classRewriter.fullClassName),
+            NodeUtil.newQName(compiler, metadata.fullClassName),
             NodeUtil.newQName(compiler, superClassString));
         Node inheritsCall = IR.exprResult(inherits);
         compiler.needsEs6Runtime = true;
@@ -744,11 +761,11 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
         enclosingStatement.getParent().addChildAfter(inheritsCall, enclosingStatement);
         newInfo.recordBaseType(new JSTypeExpression(new Node(Token.BANG,
             IR.string(superClassString)),
-            superClassName.getSourceFileName()));
+            metadata.superClassName.getSourceFileName()));
 
         Node copyProps = IR.call(
             NodeUtil.newQName(compiler, COPY_PROP),
-            classRewriter.staticAccess.cloneTree(),
+            NodeUtil.newQName(compiler, metadata.fullClassName),
             NodeUtil.newQName(compiler, superClassString));
         compiler.needsEs6Runtime = true;
 
@@ -770,11 +787,10 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
         newInfo.recordParameter(param, ctorJSDocInfo.getParameterType(param));
       }
     }
-    insertionPoint = constructor;
 
     if (NodeUtil.isStatement(classNode)) {
       constructor.getFirstChild().setString("");
-      Node ctorVar = IR.var(IR.name(classRewriter.fullClassName), constructor);
+      Node ctorVar = IR.var(IR.name(metadata.fullClassName), constructor);
       ctorVar.useSourceInfoIfMissingFromForTree(classNode);
       parent.replaceChild(classNode, ctorVar);
     } else {
@@ -782,7 +798,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     }
 
     if (NodeUtil.isStatement(constructor)) {
-      insertionPoint.setJSDocInfo(newInfo.build(insertionPoint));
+      constructor.setJSDocInfo(newInfo.build(constructor));
     } else if (parent.isName()) {
       // The constructor function is the RHS of a var statement.
       // Add the JSDoc to the VAR node.
@@ -803,6 +819,18 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     compiler.reportCodeChange();
   }
 
+  static Node getQualifiedMemberAccess(AbstractCompiler compiler, Node member, Node staticAccess,
+      Node instanceAccess) {
+    Node context = member.isStaticMember() ? staticAccess : instanceAccess;
+    context = context.cloneTree();
+    if (member.isMemberFunctionDef() || member.isMemberVariableDef()) {
+      return NodeUtil.newPropertyAccess(compiler, context, member.getString());
+    } else if (member.isComputedProp()) {
+      return IR.getelem(context, member.removeFirstChild());
+    } else {
+      throw new IllegalStateException("Unexpected class member: " + member);
+    }
+  }
 
   /**
    * Converts ES6 arrow functions to standard anonymous ES3 functions.
@@ -932,82 +960,61 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     compiler.report(JSError.make(n, CANNOT_CONVERT_YET, feature));
   }
 
-  static class ClassRewriter {
-    AbstractCompiler compiler;
+  static class ClassDeclarationMetadata {
+    /** A statement node. Tanspiled methods etc of the class are inserted after this node. */
+    private Node insertionPoint;
     /**
      * The fully qualified name of the class, which will be used in the output. May come from the
      * class itself or the LHS of an assignment.
      */
-    String fullClassName;
+    final String fullClassName;
     /** Whether the constructor function in the output should be anonymous. */
-    boolean anonymous;
-    /** This is a statement node. We insert methods of the transpiled class after this node. */
-    Node insertionPoint;
+    final boolean anonymous;
+    final Node className;
+    final Node superClassName;
 
-    Node staticAccess;
-    Node instanceAccess;
+    private ClassDeclarationMetadata(Node insertionPoint, String fullClassName,
+        boolean anonymous, Node className, Node superClassName) {
+      this.insertionPoint = insertionPoint;
+      this.fullClassName = fullClassName;
+      this.anonymous = anonymous;
+      this.className = className;
+      this.superClassName = superClassName;
+    }
 
-    ClassRewriter(AbstractCompiler compiler, Node classNode, Node parent) {
+    static ClassDeclarationMetadata create(Node classNode, Node parent) {
       Node className = classNode.getFirstChild();
       Node superClassName = className.getNext();
-      Node classMembers = classNode.getLastChild();
-
-      if (!superClassName.isEmpty() && !superClassName.isQualifiedName()) {
-        compiler.report(JSError.make(superClassName, DYNAMIC_EXTENDS_TYPE));
-        return;
-      }
 
       // If this is a class statement, or a class expression in a simple
       // assignment or var statement, convert it. In any other case, the
       // code is too dynamic, so just call cannotConvert.
       if (NodeUtil.isStatement(classNode)) {
-        fullClassName = className.getString();
-        anonymous = false;
-        insertionPoint = classNode;
+        return new ClassDeclarationMetadata(classNode, className.getString(), false, className,
+            superClassName);
       } else if (parent.isAssign() && parent.getParent().isExprResult()) {
         // Add members after the EXPR_RESULT node:
         // example.C = class {}; example.C.prototype.foo = function() {};
-        fullClassName = parent.getFirstChild().getQualifiedName();
+        String fullClassName = parent.getFirstChild().getQualifiedName();
         if (fullClassName == null) {
-          cannotConvert(parent, "Can only convert classes that are declarations or the right hand"
-              + " side of a simple assignment.");
-          return;
+          return null;
         }
-        anonymous = true;
-        insertionPoint = parent.getParent();
+        return new ClassDeclarationMetadata(parent.getParent(), fullClassName, true, className,
+            superClassName);
       } else if (parent.isName()) {
         // Add members after the 'var' statement.
         // var C = class {}; C.prototype.foo = function() {};
-        fullClassName =  parent.getString();
-        anonymous = true;
-        insertionPoint = parent.getParent();
+        return new ClassDeclarationMetadata(parent.getParent(), parent.getString(), true,
+            className, superClassName);
       } else {
-        cannotConvert(parent, "Can only convert classes that are declarations or the right hand"
-              + " side of a simple assignment.");
-        return;
+        // Cannot handle this class declaration.
+        return null;
       }
-
-      boolean useUnique = NodeUtil.isStatement(classNode) && !NodeUtil.isInFunction(classNode);
-      String uniqueFullClassName =
-          useUnique ? getUniqueClassName(fullClassName) : fullClassName;
-      String superClassString = superClassName.getQualifiedName();
-      staticAccess = NodeUtil.newQName(compiler, uniqueFullClassName);
-      instanceAccess =
-          NodeUtil.newPropertyAccess(compiler, staticAccess, "prototype");
-
-      Verify.verify(NodeUtil.isStatement(insertionPoint));
     }
 
-    private Node getQualifiedMemberAccess(Node member) {
-      Node context = member.isStaticMember() ? staticAccess : instanceAccess;
-      context = context.cloneTree();
-      if (member.isMemberFunctionDef() || member.isMemberVariableDef()) {
-        return NodeUtil.newPropertyAccess(compiler, context, member.getString());
-      } else if (member.isComputedProp()) {
-        return IR.getelem(context, member.removeFirstChild());
-      } else {
-        throw new IllegalStateException("Unexpected class member: " + member);
-      }
+    void insertStaticMember(Node newNode) {
+      insertionPoint.getParent().addChildAfter(newNode, insertionPoint);
+      insertionPoint = newNode;
     }
   }
 }

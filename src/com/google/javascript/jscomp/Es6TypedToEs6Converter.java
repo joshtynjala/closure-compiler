@@ -19,6 +19,8 @@ import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 
+import com.google.javascript.jscomp.Es6ToEs3Converter.ClassDeclarationMetadata;
+
 public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCompilerPass {
 
   private final AbstractCompiler compiler;
@@ -48,20 +50,39 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
       return;
     }
     Node classNode = n;
+    ClassDeclarationMetadata metadata = ClassDeclarationMetadata.create(n, parent);
+    if (metadata == null) {
+      // Cannot handle.
+    }
 
-    Node className = classNode.getFirstChild();
-    Node superClassName = className.getNext();
     Node classMembers = classNode.getLastChild();
+
+    // Find the constructor
+    Node constructor = null;
+    // Find constructor.
+    for (Node member : classMembers.children()) {
+      if (member.isMemberFunctionDef() && member.getString().equals("constructor")) {
+        constructor = member.getFirstChild();
+      }
+    }
+    if (constructor == null) {
+      // cannot handle
+    }
+
+    Node classNameAccess = NodeUtil.newQName(compiler, metadata.fullClassName);
 
     Node memberVarInsertionPoint = null;  // To insert up front initially
     for (Node member : classMembers.children()) {
       if (!member.isMemberVariableDef() && !member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE)) {
         continue;
       }
+      compiler.reportCodeChange();
+      member.getParent().removeChild(member);
 
       Node newNode;
       Node qualifiedMemberAccess =
-          getQualifiedMemberAccess(member, classNameAccess, IR.thisNode());
+          Es6ToEs3Converter.getQualifiedMemberAccess(compiler, member, classNameAccess,
+              IR.thisNode());
       Node initializer = member.removeFirstChild();
       if (initializer != null) {
         newNode = IR.assign(qualifiedMemberAccess, initializer);
@@ -71,13 +92,11 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
       newNode = NodeUtil.newExpr(newNode);
       newNode.useSourceInfoIfMissingFromForTree(member);
       if (member.isStaticMember()) {
-        insertionPoint.getParent().addChildAfter(newNode, insertionPoint);
-        insertionPoint = newNode;
+        metadata.insertStaticMember(newNode);
       } else {
         constructor.getLastChild().addChildAfter(newNode, memberVarInsertionPoint);
         memberVarInsertionPoint = newNode;
       }
     }
-
   }
 }

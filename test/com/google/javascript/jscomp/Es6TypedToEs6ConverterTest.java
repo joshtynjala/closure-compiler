@@ -21,6 +21,12 @@ import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
 
   @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    setAcceptedLanguage(LanguageMode.ECMASCRIPT6_TYPED);
+  }
+
+  @Override
   protected CompilerOptions getOptions() {
     CompilerOptions options = super.getOptions();
     options.setLanguageIn(LanguageMode.ECMASCRIPT6_TYPED);
@@ -37,7 +43,6 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
   }
 
   public void testMemberVariable() throws Exception {
-    setAcceptedLanguage(LanguageMode.ECMASCRIPT6_TYPED);
     test(
         Joiner.on('\n').join(
             "class C {",
@@ -54,11 +59,14 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
             "    this.mv2 = 1;",
             "    this.f = 1;",
             "  }",
-            "};"));
+            "}"));
+  }
+
+  public void testMemberVariable_noCtor() throws Exception {
+    fail("implement");
   }
 
   public void testMemberVariable_static() throws Exception {
-    setAcceptedLanguage(LanguageMode.ECMASCRIPT6_TYPED);
     test(
         Joiner.on('\n').join(
             "class C {",
@@ -69,16 +77,20 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
         Joiner.on('\n').join(
             "class C {",
             "  constructor() {",
-            "    this.mv;",
-            "    this.mv2 = 1;",
-            "    this.f = 1;",
             "  }",
-            "};\n",
+            "}\n",
             "C.smv = 3;"));
   }
 
+  public void testMemberVariable_staticVarAssign() throws Exception {
+    fail("implement");
+  }
+
+  public void testMemberVariable_staticAnonymous() throws Exception {
+    fail("implement");
+  }
+
   public void testComputedPropertyVariable() throws Exception {
-    setAcceptedLanguage(LanguageMode.ECMASCRIPT6_TYPED);
     test(
         Joiner.on('\n').join(
             "class C {",
@@ -95,26 +107,20 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
             "    this['mv' + 2] = 1;",
             "    this.f = 1;",
             "  }",
-            "};"));
+            "}"));
   }
 
   public void testComputedPropertyVariable_static() throws Exception {
-    setAcceptedLanguage(LanguageMode.ECMASCRIPT6_TYPED);
     test(
         Joiner.on('\n').join(
             "class C {",
             "  static ['smv' + 2]: number = 1;",
-            "  constructor() {",
-            "  }",
             "}"),
         Joiner.on('\n').join(
-            "/**",
-            " * @constructor",
-            " * @struct",
-            " */",
-            "var C = function() {",
-            "};",
+            "class C {",
+            "}",
             "C['smv' + 2] = 1;"));
   }
 
+  // TODO(martinprobst): What if no ctor?
 }
