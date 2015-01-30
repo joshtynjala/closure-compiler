@@ -93,7 +93,11 @@ public abstract class CodePrinterTestBase extends TestCase {
     }
   }
 
-  abstract class CompilerOptionBuilder {
+  String parsePrint(String js, CompilerOptions options) {
+    return new CodePrinter.Builder(parse(js)).setCompilerOptions(options).build();
+  }
+
+  private abstract class CompilerOptionBuilder {
     abstract void setOptions(CompilerOptions options);
   }
 
@@ -104,10 +108,6 @@ public abstract class CodePrinterTestBase extends TestCase {
     options.setLanguageOut(languageMode);
     builder.setOptions(options);
     return options;
-  }
-
-  String parsePrint(String js, CompilerOptions options) {
-    return new CodePrinter.Builder(parse(js)).setCompilerOptions(options).build();
   }
 
   String printNode(Node n) {
