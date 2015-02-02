@@ -552,10 +552,6 @@ class IRFactory {
         case Token.FUNCTION:
           valid = isFunctionDeclaration(n);
           break;
-        case Token.MEMBER_VARIABLE_DEF:
-          // Typed member variable.
-          valid = true;
-          break;
         // Object literal properties, catch declarations and variable
         // initializers are valid.
         case Token.NAME:
@@ -1307,9 +1303,7 @@ class IRFactory {
 
         // Old Rhino tagged the empty name node with the line number of the
         // declaration.
-        newName.setLineno(lineno(functionTree));
-        newName.setCharno(charno(functionTree));
-        maybeSetLength(newName, 0);
+        setSourceInfo(newName, functionTree);
       }
 
       Node node = newNode(Token.FUNCTION);
@@ -1317,9 +1311,7 @@ class IRFactory {
         node.addChildToBack(newName);
       } else {
         Node emptyName = newStringNode(Token.NAME, "");
-        emptyName.setLineno(lineno(functionTree));
-        emptyName.setCharno(charno(functionTree));
-        maybeSetLength(emptyName, 0);
+        setSourceInfo(emptyName, functionTree);
         node.addChildToBack(emptyName);
       }
       node.addChildToBack(transform(functionTree.formalParameterList));
@@ -1519,8 +1511,7 @@ class IRFactory {
     Node processNumberLiteral(LiteralExpressionTree literalNode) {
       double value = normalizeNumber(literalNode.literalToken.asLiteral());
       Node number = newNumberNode(value);
-      number.setLineno(lineno(literalNode));
-      number.setCharno(charno(literalNode));
+      setSourceInfo(number, literalNode);
       return number;
     }
 
@@ -2163,8 +2154,7 @@ class IRFactory {
       } else {
         typeNode = TypeDeclarationsIRFactory.namedType(tree.segments);
       }
-      typeNode.setCharno(charno(tree));
-      typeNode.setLineno(lineno(tree));
+      setSourceInfo(typeNode, tree);
       return typeNode;
     }
 

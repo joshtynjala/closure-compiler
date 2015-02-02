@@ -18,10 +18,16 @@ package com.google.javascript.jscomp;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
-
 import com.google.javascript.jscomp.Es6ToEs3Converter.ClassDeclarationMetadata;
 
+/**
+ * Conversion pass that converts ES6 type syntax code to plain ES6, currently transpiles field
+ * declarations and field initializers.
+ */
 public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCompilerPass {
+  static final DiagnosticType CANNOT_CONVERT_FIELDS = DiagnosticType.error(
+      "JSC_CANNOT_CONVERT_FIELDS",
+      "Can only convert class fields in declarations or simple assignments into symbols.");
 
   private final AbstractCompiler compiler;
 
@@ -52,7 +58,8 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
     Node classNode = n;
     ClassDeclarationMetadata metadata = ClassDeclarationMetadata.create(n, parent);
     if (metadata == null) {
-      // Cannot handle.
+      // Cannot handle due to static field initialization.
+      compiler.report(JSError.make(n, CANNOT_CONVERT_FIELDS));
     }
 
     Node classMembers = classNode.getLastChild();
@@ -73,6 +80,7 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
 
     Node memberVarInsertionPoint = null;  // To insert up front initially
     for (Node member : classMembers.children()) {
+      // Functions are handled by the regular Es6ToEs3Converter
       if (!member.isMemberVariableDef() && !member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE)) {
         continue;
       }
@@ -92,8 +100,10 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
       newNode = NodeUtil.newExpr(newNode);
       newNode.useSourceInfoIfMissingFromForTree(member);
       if (member.isStaticMember()) {
+        // Static fields are transpiled on the ctor function.
         metadata.insertStaticMember(newNode);
       } else {
+        // Instance fields are transpiled to statements inside the ctor function.
         constructor.getLastChild().addChildAfter(newNode, memberVarInsertionPoint);
         memberVarInsertionPoint = newNode;
       }

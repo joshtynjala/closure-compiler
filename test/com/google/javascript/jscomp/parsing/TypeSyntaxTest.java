@@ -226,6 +226,11 @@ public class TypeSyntaxTest extends TestCase {
     assertDeclaredType("number type", numberType(), classMembers.getFirstChild());
   }
 
+  public void testMemberVariable_generator() throws Exception {
+    expectErrors("Parse error. Member variable cannot be prefixed by '*' (generator function)");
+    parse("class X { *foo: number; }");
+  }
+
   public void testComputedPropertyMemberVariable() throws Exception {
     parse("class Foo {\n  ['foo'];\n}");
   }
