@@ -216,16 +216,16 @@ public class DefaultPassConfig extends PassConfig {
       checks.add(closureRewriteModule);
     }
 
-    if (options.needsConversion() || options.aggressiveVarCheck.isOn()) {
+    if (options.lowerFromEs6() || options.aggressiveVarCheck.isOn()) {
       checks.add(checkVariableReferences);
     }
 
-    if (options.needsConversion()
+    if (options.lowerFromEs6()
         && options.getLanguageIn() == LanguageMode.ECMASCRIPT6_TYPED) {
       checks.add(convertEs6TypedToEs6);
     }
 
-    if (options.needsConversion()) {
+    if (options.lowerFromEs6()) {
       checks.add(es6RenameVariablesInParamLists);
       checks.add(es6SplitVariableDeclarations);
       checks.add(es6ConvertSuper);
@@ -239,7 +239,7 @@ public class DefaultPassConfig extends PassConfig {
       return checks;
     }
 
-    if (options.needsConversion()) {
+    if (options.lowerFromEs6()) {
       checks.add(es6RuntimeLibrary);
     }
 
