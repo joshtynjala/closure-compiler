@@ -54,10 +54,6 @@ public class TypeSyntaxTest extends TestCase {
     testErrorManager.expectErrors(errors);
   }
 
-  private void expectWarnings(String... warnings) {
-    testErrorManager.expectWarnings(warnings);
-  }
-
   public void testVariableDeclaration() {
     assertVarType("any", TypeDeclarationsIRFactory.anyType(),
         "var foo: any = 'hello';");
@@ -205,6 +201,11 @@ public class TypeSyntaxTest extends TestCase {
   public void testParameterizedType_empty() {
     expectErrors("Parse error. Unexpected token '>' in type expression");
     parse("var x: my.parameterized.Type<ns.A, >;");
+  }
+
+  public void testParameterizedType_noArgs() {
+    expectErrors("Parse error. Unexpected token '>' in type expression");
+    parse("var x: my.parameterized.Type<>;");
   }
 
   public void testParameterizedType_trailing1() {
