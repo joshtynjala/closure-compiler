@@ -1004,12 +1004,6 @@ class IRFactory {
     }
   }
 
-  private void maybeSetLength(Node node, int length) {
-    if (config.isIdeMode) {
-      node.setLength(length);
-    }
-  }
-
   private Node justTransform(ParseTree node) {
     return transformDispatcher.process(node);
   }
