@@ -189,6 +189,11 @@ public class TypeSyntaxTest extends TestCase {
     parse("var x: my.parameterized.Type<ns.A, >;");
   }
 
+  public void testParameterizedType_noArgs() {
+    expectErrors("Parse error. Unexpected token '>' in type expression");
+    parse("var x: my.parameterized.Type<>;");
+  }
+
   public void testParameterizedType_trailing1() {
     expectErrors("Parse error. '>' expected");
     parse("var x: my.parameterized.Type<ns.A;");

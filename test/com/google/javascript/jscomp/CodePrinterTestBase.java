@@ -97,7 +97,7 @@ public abstract class CodePrinterTestBase extends TestCase {
     return new CodePrinter.Builder(parse(js)).setCompilerOptions(options).build();
   }
 
-  private abstract class CompilerOptionBuilder {
+  abstract static class CompilerOptionBuilder {
     abstract void setOptions(CompilerOptions options);
   }
 
