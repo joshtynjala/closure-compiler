@@ -15,6 +15,7 @@
  */
 package com.google.javascript.jscomp;
 
+import com.google.common.base.Preconditions;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
@@ -60,6 +61,7 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
     if (metadata == null) {
       // Cannot handle due to static field initialization.
       compiler.report(JSError.make(n, CANNOT_CONVERT_FIELDS));
+      return;
     }
 
     Node classMembers = classNode.getLastChild();
@@ -72,12 +74,10 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
         constructor = member.getFirstChild();
       }
     }
-    if (constructor == null) {
-      // cannot handle
-    }
+
+    Preconditions.checkNotNull(constructor, "Constructor should be added by Es6ConvertSuper");
 
     Node classNameAccess = NodeUtil.newQName(compiler, metadata.fullClassName);
-
     Node memberVarInsertionPoint = null;  // To insert up front initially
     for (Node member : classMembers.children()) {
       // Functions are handled by the regular Es6ToEs3Converter

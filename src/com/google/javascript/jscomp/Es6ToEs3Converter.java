@@ -670,7 +670,7 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
           + " side of a simple assignment.");
       return;
     }
-    if (!metadata.superClassName.isEmpty() && !metadata.superClassName.isQualifiedName()) {
+    if (metadata.hasSuperClass() && !metadata.superClassName.isQualifiedName()) {
       compiler.report(JSError.make(metadata.superClassName, DYNAMIC_EXTENDS_TYPE));
       return;
     }
@@ -678,7 +678,6 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     boolean useUnique = NodeUtil.isStatement(classNode) && !NodeUtil.isInFunction(classNode);
     String uniqueFullClassName =
         useUnique ? getUniqueClassName(metadata.fullClassName) : metadata.fullClassName;
-    String superClassString = metadata.superClassName.getQualifiedName();
     Node classNameAccess = NodeUtil.newQName(compiler, uniqueFullClassName);
     Node prototypeAccess = NodeUtil.newPropertyAccess(compiler, classNameAccess, "prototype");
 
@@ -701,6 +700,8 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
         ctorJSDocInfo = member.getJSDocInfo();
         constructor = member.getFirstChild().detachFromParent();
         if (!metadata.anonymous) {
+          // Turns class Foo { constructor: function() {} } into function Foo() {},
+          // i.e. attaches the name the ctor function.
           constructor.replaceChild(
               constructor.getFirstChild(), metadata.className.cloneNode());
         }
@@ -743,7 +744,9 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
         : new JSDocInfoBuilder(true);
 
     newInfo.recordConstructor();
-    if (!metadata.superClassName.isEmpty()) {
+
+    if (metadata.hasSuperClass()) {
+      String superClassString = metadata.superClassName.getQualifiedName();
       if (newInfo.isInterfaceRecorded()) {
         newInfo.recordExtendedInterface(new JSTypeExpression(new Node(Token.BANG,
             IR.string(superClassString)),
@@ -960,6 +963,10 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     compiler.report(JSError.make(n, CANNOT_CONVERT_YET, feature));
   }
 
+  /**
+   * Represents static metadata on a class declaration expression - i.e. the qualified name that a
+   * class declares (directly or by assignment), whether it's anonymous, 
+   */
   static class ClassDeclarationMetadata {
     /** A statement node. Tanspiled methods etc of the class are inserted after this node. */
     private Node insertionPoint;
@@ -1015,6 +1022,10 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     void insertStaticMember(Node newNode) {
       insertionPoint.getParent().addChildAfter(newNode, insertionPoint);
       insertionPoint = newNode;
+    }
+
+    boolean hasSuperClass() {
+      return !superClassName.isEmpty();
     }
   }
 }

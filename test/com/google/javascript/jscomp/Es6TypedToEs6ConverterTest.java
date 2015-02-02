@@ -38,6 +38,7 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
   protected CompilerPass getProcessor(Compiler compiler) {
     PhaseOptimizer optimizer = new PhaseOptimizer(compiler, null, null);
     DefaultPassConfig passConfig = new DefaultPassConfig(getOptions());
+    optimizer.addOneTimePass(passConfig.es6ConvertSuper);  // required for no ctor tests
     optimizer.addOneTimePass(passConfig.convertEs6TypedToEs6);
     return optimizer;
   }
@@ -63,7 +64,19 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
   }
 
   public void testMemberVariable_noCtor() throws Exception {
-    fail("implement");
+    test(
+        Joiner.on('\n').join(
+            "class C {",
+            "  mv: number;",
+            "  mv2: number = 1;",
+            "}"),
+        Joiner.on('\n').join(
+            "class C {",
+            "  constructor() {",
+            "    this.mv;",
+            "    this.mv2 = 1;",
+            "  }",
+            "}"));
   }
 
   public void testMemberVariable_static() throws Exception {
@@ -83,12 +96,36 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
   }
 
   public void testMemberVariable_staticVarAssign() throws Exception {
-    fail("implement");
+    test(
+        Joiner.on('\n').join(
+            "var C = class {",
+            "  static smv = 3;",
+            "  constructor() {",
+            "  }",
+            "}"),
+        Joiner.on('\n').join(
+            "var C = class {",
+            "  constructor() {",
+            "  }",
+            "}\n",
+            "C.smv = 3;"));
   }
 
   public void testMemberVariable_staticAnonymous() throws Exception {
-    fail("implement");
-  }
+    test(
+        Joiner.on('\n').join(
+            "(class {",
+            "  constructor() {",
+            "  }",
+            "})"),
+        Joiner.on('\n').join(
+            "(class {",
+            "  static smv = 3;",
+            "  constructor() {",
+            "  }",
+            "})\n"),
+        Es6TypedToEs6Converter.CANNOT_CONVERT_FIELDS);
+    }
 
   public void testComputedPropertyVariable() throws Exception {
     test(
@@ -118,9 +155,9 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
             "}"),
         Joiner.on('\n').join(
             "class C {",
+            "  constructor() {}",
             "}",
             "C['smv' + 2] = 1;"));
   }
 
-  // TODO(martinprobst): What if no ctor?
 }
