@@ -68,7 +68,6 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
 
     // Find the constructor
     Node constructor = null;
-    // Find constructor.
     for (Node member : classMembers.children()) {
       if (member.isMemberFunctionDef() && member.getString().equals("constructor")) {
         constructor = member.getFirstChild();

@@ -159,5 +159,4 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
             "}",
             "C['smv' + 2] = 1;"));
   }
-
 }
