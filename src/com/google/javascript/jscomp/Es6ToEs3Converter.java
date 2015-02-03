@@ -691,10 +691,10 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
       if (member.isEmpty()) {
         continue;
       }
-      if (member.isMemberVariableDef() || member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE)) {
-        // Member variables are handled below, after finding the constructor.
-        continue;
-      }
+      Preconditions.checkState(
+          member.isMemberFunctionDef()
+              || (member.isComputedProp() && !member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE)),
+          "Member variables should have been transpiled earler.");
 
       if (member.isMemberFunctionDef() && member.getString().equals("constructor")) {
         ctorJSDocInfo = member.getJSDocInfo();
@@ -826,12 +826,10 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
       Node instanceAccess) {
     Node context = member.isStaticMember() ? staticAccess : instanceAccess;
     context = context.cloneTree();
-    if (member.isMemberFunctionDef() || member.isMemberVariableDef()) {
-      return NodeUtil.newPropertyAccess(compiler, context, member.getString());
-    } else if (member.isComputedProp()) {
+    if (member.isComputedProp()) {
       return IR.getelem(context, member.removeFirstChild());
     } else {
-      throw new IllegalStateException("Unexpected class member: " + member);
+      return NodeUtil.newPropertyAccess(compiler, context, member.getString());
     }
   }
 
