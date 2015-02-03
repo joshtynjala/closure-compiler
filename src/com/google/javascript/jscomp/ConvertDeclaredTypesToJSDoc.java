@@ -61,7 +61,12 @@ public class ConvertDeclaredTypesToJSDoc extends AbstractPostOrderCallback imple
     JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(info);
 
     Node typeRoot = convertWithLocation(type);
-    builder.recordType(new JSTypeExpression(typeRoot, n.getSourceFileName()));
+    JSTypeExpression typeExpression = new JSTypeExpression(typeRoot, n.getSourceFileName());
+    if (n.isFunction()) {
+      builder.recordReturnType(typeExpression);
+    } else {
+      builder.recordType(typeExpression);
+    }
     builder.recordInlineType();
 
     info = builder.build(n);

@@ -21,10 +21,17 @@ public class Es6TypedIntegrationTest extends IntegrationTestCase {
 
   public void testBasicTypeCheck() throws Exception {
     test(createCompilerOptions(), "var x:number = 12;\nalert(x);", "alert(12);");
+  }
+
+  public void testBasicTypeCheck_error() throws Exception {
     test(createCompilerOptions(), "var x:number = 'hello';", TypeValidator.TYPE_MISMATCH_WARNING);
   }
 
-  public void testFunctionType() throws Exception {
+  public void testFunctionType_correct() throws Exception {
+    test(createCompilerOptions(), "function x(): number { return 12; }; alert(x());", "alert(12)");
+  }
+
+  public void testFunctionType_error() throws Exception {
     test(createCompilerOptions(), "function x(): number { return 'hello'; }",
         TypeValidator.TYPE_MISMATCH_WARNING);
   }
