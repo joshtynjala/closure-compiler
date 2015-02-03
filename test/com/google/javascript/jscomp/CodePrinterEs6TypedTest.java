@@ -17,6 +17,13 @@ package com.google.javascript.jscomp;
 
 import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 
+/**
+ * Round-trip test for Typescript-style inline type syntax.  Each expression is parsed and then
+ * printed, and we assert that the pretty-printed result is identical to the input.
+ *
+ * <p>See {@link Es6InlineTypesTest} for tests which start from closure-style JSDoc type declaration
+ * syntax.
+ */
 public class CodePrinterEs6TypedTest extends CodePrinterTestBase {
 
   @Override
@@ -71,11 +78,11 @@ public class CodePrinterEs6TypedTest extends CodePrinterTestBase {
   }
 
   public void testArrayType() {
-    assertPrettyPrintSame( "var foo: string[];");
+    assertPrettyPrintSame("var foo: string[];");
   }
 
   public void testArrayType_qualifiedType() {
-    assertPrettyPrintSame( "var foo: mymod.ns.Type[];");
+    assertPrettyPrintSame("var foo: mymod.ns.Type[];");
   }
 
   public void testParameterizedType() {
