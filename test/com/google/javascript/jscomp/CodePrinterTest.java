@@ -25,6 +25,7 @@ import com.google.javascript.rhino.Token;
 
 import java.util.List;
 
+
 public class CodePrinterTest extends CodePrinterTestBase {
 
   public void testPrint() {
