@@ -29,8 +29,7 @@ import com.google.javascript.rhino.Token;
  * Converts {@link Node#getDeclaredTypeExpression()} to {@link JSDocInfo#getType()} type
  * annotations. Types are marked as inline types.
  */
-public class ConvertDeclaredTypesToJSDoc extends AbstractPostOrderCallback implements
-    CompilerPass, HotSwapCompilerPass {
+public class ConvertDeclaredTypesToJSDoc extends AbstractPostOrderCallback implements CompilerPass {
 
   private final AbstractCompiler compiler;
 
@@ -40,11 +39,6 @@ public class ConvertDeclaredTypesToJSDoc extends AbstractPostOrderCallback imple
 
   @Override
   public void process(Node externs, Node scriptRoot) {
-    NodeTraversal.traverse(compiler, scriptRoot, this);
-  }
-
-  @Override
-  public void hotSwapScript(Node scriptRoot, Node originalRoot) {
     NodeTraversal.traverse(compiler, scriptRoot, this);
   }
 
@@ -89,7 +83,7 @@ public class ConvertDeclaredTypesToJSDoc extends AbstractPostOrderCallback imple
       case Token.VOID_TYPE:
         return IR.string("void");
       case Token.ANY_TYPE:
-        return new Node(Token.STAR);
+        return new Node(Token.QMARK);
         // Named types.
       case Token.NAMED_TYPE:
         return convertNamedType(type);

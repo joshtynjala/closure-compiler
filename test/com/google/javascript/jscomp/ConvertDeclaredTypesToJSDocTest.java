@@ -24,7 +24,7 @@ import junit.framework.TestCase;
 public class ConvertDeclaredTypesToJSDocTest extends TestCase {
 
   public void testBuiltins() throws Exception {
-    assertTypeConversion("*", "any");
+    assertTypeConversion("?", "any");
     assertTypeConversion("number", "number");
     assertTypeConversion("boolean", "boolean");
     assertTypeConversion("string", "string");

@@ -17,14 +17,15 @@ package com.google.javascript.jscomp;
 
 import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 
+/** Integration tests for compilation in {@link LanguageMode#ECMASCRIPT6_TYPED} mode. */
 public class Es6TypedIntegrationTest extends IntegrationTestCase {
 
   public void testBasicTypeCheck() throws Exception {
-    test(createCompilerOptions(), "var x:number = 12;\nalert(x);", "alert(12);");
+    test(createCompilerOptions(), "var x: number = 12;\nalert(x);", "alert(12);");
   }
 
   public void testBasicTypeCheck_error() throws Exception {
-    test(createCompilerOptions(), "var x:number = 'hello';", TypeValidator.TYPE_MISMATCH_WARNING);
+    test(createCompilerOptions(), "var x: number = 'hello';", TypeValidator.TYPE_MISMATCH_WARNING);
   }
 
   public void testFunctionType_correct() throws Exception {
@@ -33,6 +34,15 @@ public class Es6TypedIntegrationTest extends IntegrationTestCase {
 
   public void testFunctionType_error() throws Exception {
     test(createCompilerOptions(), "function x(): number { return 'hello'; }",
+        TypeValidator.TYPE_MISMATCH_WARNING);
+  }
+
+  public void testFunctionParameter() throws Exception {
+    test(createCompilerOptions(), "function x(x: number) {}; x(12);", "");
+  }
+
+  public void testFunctionParameter_error() throws Exception {
+    test(createCompilerOptions(), "function x(x: number) {}; x('hello');",
         TypeValidator.TYPE_MISMATCH_WARNING);
   }
 
