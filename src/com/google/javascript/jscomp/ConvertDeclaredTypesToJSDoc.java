@@ -15,7 +15,7 @@
  */
 package com.google.javascript.jscomp;
 
-import com.google.common.base.Verify;
+import com.google.common.base.Preconditions;
 import com.google.javascript.jscomp.NodeTraversal.AbstractPostOrderCallback;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.JSDocInfo;
@@ -50,7 +50,7 @@ public class ConvertDeclaredTypesToJSDoc extends AbstractPostOrderCallback imple
     }
 
     JSDocInfo info = n.getJSDocInfo();
-    Verify.verify(info == null || info.getType() == null,
+    Preconditions.checkState(info == null || info.getType() == null,
         "Nodes must not have both type declarations and JSDoc types");
     JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(info);
 
@@ -108,7 +108,6 @@ public class ConvertDeclaredTypesToJSDoc extends AbstractPostOrderCallback imple
       case Token.UNION_TYPE:
       case Token.OPTIONAL_PARAMETER:
       case Token.RECORD_TYPE:
-      case Token.NULL_TYPE:
       default:
         // TODO(martinprobst): Implement.
         break;
