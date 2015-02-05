@@ -178,7 +178,8 @@ md.$sidenav;
 /**
  * @typedef {{
  *   setDefaultTheme: function(string),
- *   alwaysWatchTheme: function(boolean)
+ *   alwaysWatchTheme: function(boolean),
+ *   theme: function(string)
  * }}
  */
 md.$mdThemingProvider;
@@ -192,3 +193,18 @@ md.$mdThemingProvider.setDefaultTheme = function(theme) {};
  * @param {boolean} alwaysWatch
  */
 md.$mdThemingProvider.alwaysWatchTheme = function(alwaysWatch) {};
+
+/**
+ * @param {string} theme
+ */
+md.$mdThemingProvider.theme = function(theme) {};
+
+/**
+ * @param {string} primaryPalette
+ */
+md.$mdThemingProvider.primaryPalette = function(primaryPalette) {};
+
+/**
+ * @param {string} accentPalette
+ */
+md.$mdThemingProvider.accentPalette = function(accentPalette) {};
