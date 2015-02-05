@@ -17,7 +17,6 @@
 package com.google.javascript.jscomp;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.javascript.rhino.InputId;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
