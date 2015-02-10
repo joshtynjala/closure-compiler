@@ -16,7 +16,6 @@
 package com.google.javascript.jscomp;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Verify;
 import com.google.common.collect.Lists;
 import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 import com.google.javascript.rhino.IR;
@@ -681,7 +680,8 @@ public class Es6ToEs3Converter implements NodeTraversal.Callback, HotSwapCompile
     Node classNameAccess = NodeUtil.newQName(compiler, uniqueFullClassName);
     Node prototypeAccess = NodeUtil.newPropertyAccess(compiler, classNameAccess, "prototype");
 
-    Verify.verify(NodeUtil.isStatement(metadata.insertionPoint));
+    Preconditions.checkState(NodeUtil.isStatement(metadata.insertionPoint),
+        "insertion point must be a statement: %s", metadata.insertionPoint);
 
     Node constructor = null;
     JSDocInfo ctorJSDocInfo = null;
