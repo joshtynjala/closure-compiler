@@ -22,8 +22,6 @@ import static com.google.javascript.jscomp.TypeValidator.TYPE_MISMATCH_WARNING;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 import com.google.javascript.rhino.Node;
@@ -321,13 +319,6 @@ public class IntegrationTest extends IntegrationTestCase {
       "/** @constructor */ function Foo() {}",
       "new Foo();"
     });
-  }
-
-  public void testCheckRequiresOn() {
-    CompilerOptions options = createCompilerOptions();
-    options.setCheckRequires(CheckLevel.ERROR);
-    test(options, new String[] {"/** @constructor */ function Foo() {}", "new Foo();"},
-        CheckRequiresForConstructors.MISSING_REQUIRE_WARNING);
   }
 
   public void testCheckProvidesOn() {
@@ -821,7 +812,6 @@ public class IntegrationTest extends IntegrationTestCase {
   public void testAllChecksOn() {
     CompilerOptions options = createCompilerOptions();
     options.setCheckSuspiciousCode(true);
-    options.setCheckRequires(CheckLevel.ERROR);
     options.setCheckProvides(CheckLevel.ERROR);
     options.setGenerateExports(true);
     options.exportTestFunctions = true;
@@ -2413,8 +2403,9 @@ public class IntegrationTest extends IntegrationTestCase {
   }
 
   public void testAlwaysRunSafetyCheck() {
-    Multimap<CustomPassExecutionTime, CompilerPass> custom =
-        ImmutableMultimap.<CustomPassExecutionTime, CompilerPass>of(
+    CompilerOptions options = createCompilerOptions();
+    options.setCheckSymbols(false);
+    options.addCustomPass(
             CustomPassExecutionTime.BEFORE_OPTIMIZATIONS, new CompilerPass() {
               @Override
               public void process(Node externs, Node root) {
@@ -2424,9 +2415,7 @@ public class IntegrationTest extends IntegrationTestCase {
               }
             });
 
-    CompilerOptions options = createCompilerOptions();
-    options.setCheckSymbols(false);
-    options.setCustomPasses(custom);
+
     try {
       test(options,
            "var x = 3; function f() { return x + z; }",
@@ -2850,15 +2839,6 @@ public class IntegrationTest extends IntegrationTestCase {
         "/** @const */\n" +
         "var x = 1; foo(); x = 2;\n";
     test(options, code, ConstCheck.CONST_REASSIGNED_VALUE_ERROR);
-  }
-
-  public void testBiasedLabelRenaming() {
-    CompilerOptions options = createCompilerOptions();
-    options.setAggressiveRenaming(true);
-    options.setLabelRenaming(true);
-    String code = "function a() {lbl: while(1) {while(1) {break lbl}}}";
-    String result = "function a() {f: for(;1;) for(;1;)break f}";
-    test(options, code, result);
   }
 
   public void testIssue937() {

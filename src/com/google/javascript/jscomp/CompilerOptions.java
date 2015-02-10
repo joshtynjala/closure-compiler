@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -209,13 +210,15 @@ public class CompilerOptions implements Serializable, Cloneable {
     reportMissingOverride = level;
   }
 
-  /** Checks for missing goog.require() calls **/
-  @Deprecated
-  public CheckLevel checkRequires;
-
+  /**
+   * Deprecated. Use
+   * {@code setWarningLevel(DiagnosticGroups.MISSING_REQUIRE, CheckLevel.WARNING);}
+   * or
+   * {@code setWarningLevel(DiagnosticGroups.MISSING_REQUIRE, CheckLevel.ERROR);}
+   */
   @Deprecated
   public void setCheckRequires(CheckLevel level) {
-    checkRequires = level;
+    setWarningLevel(DiagnosticGroups.MISSING_REQUIRE, level);
   }
 
   public CheckLevel checkProvides;
@@ -301,8 +304,6 @@ public class CompilerOptions implements Serializable, Cloneable {
   //--------------------------------
   // Optimizations
   //--------------------------------
-
-  boolean aggressiveRenaming;
 
   /** Prefer commas over semicolons when doing statement fusion */
   boolean aggressiveFusion;
@@ -970,7 +971,6 @@ public class CompilerOptions implements Serializable, Cloneable {
     checkSuspiciousCode = false;
     checkTypes = false;
     reportMissingOverride = CheckLevel.OFF;
-    checkRequires = CheckLevel.OFF;
     checkProvides = CheckLevel.OFF;
     checkGlobalNamesLevel = CheckLevel.OFF;
     brokenClosureRequiresLevel = CheckLevel.ERROR;
@@ -984,7 +984,6 @@ public class CompilerOptions implements Serializable, Cloneable {
     checkEventfulObjectDisposalPolicy = CheckEventfulObjectDisposal.DisposalCheckingPolicy.OFF;
 
     // Optimizations
-    aggressiveRenaming = false;
     foldConstants = false;
     coalesceVariableNames = false;
     deadAssignmentElimination = false;
@@ -1798,10 +1797,6 @@ public class CompilerOptions implements Serializable, Cloneable {
     this.checkMissingGetCssNameBlacklist = blackList;
   }
 
-  public void setAggressiveRenaming(boolean aggressive) {
-    this.aggressiveRenaming = aggressive;
-  }
-
   public void setFoldConstants(boolean foldConstants) {
     this.foldConstants = foldConstants;
   }
@@ -2102,8 +2097,19 @@ public class CompilerOptions implements Serializable, Cloneable {
     this.stripTypePrefixes = stripTypePrefixes;
   }
 
+  /**
+   * @deprecated Use {@link #addCustomPass}
+   */
+  @Deprecated
   public void setCustomPasses(Multimap<CustomPassExecutionTime, CompilerPass> customPasses) {
     this.customPasses = customPasses;
+  }
+
+  public void addCustomPass(CustomPassExecutionTime time, CompilerPass customPass) {
+    if (customPasses == null) {
+      customPasses = LinkedHashMultimap.<CustomPassExecutionTime, CompilerPass>create();
+    }
+    customPasses.put(time, customPass);
   }
 
   public void setMarkNoSideEffectCalls(boolean markNoSideEffectCalls) {
