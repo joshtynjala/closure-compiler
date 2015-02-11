@@ -17,7 +17,10 @@ package com.google.javascript.jscomp;
 
 import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 
-/** Integration tests for compilation in {@link LanguageMode#ECMASCRIPT6_TYPED} mode. */
+/**
+ * Integration tests for compilation in {@link LanguageMode#ECMASCRIPT6_TYPED} mode, with type
+ * checking by {@link TypeValidator}.
+ */
 public class Es6TypedIntegrationTest extends IntegrationTestCase {
 
   public void testBasicTypeCheck() throws Exception {
@@ -52,6 +55,7 @@ public class Es6TypedIntegrationTest extends IntegrationTestCase {
     CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
     options.setLanguageIn(LanguageMode.ECMASCRIPT6_TYPED);
     options.setLanguageOut(LanguageMode.ECMASCRIPT5);
+    options.preserveTypeAnnotations = true;
     WarningLevel.VERBOSE.setOptionsForWarningLevel(options);
     return options;
   }

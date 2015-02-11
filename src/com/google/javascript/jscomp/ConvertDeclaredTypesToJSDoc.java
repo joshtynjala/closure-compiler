@@ -60,11 +60,12 @@ public class ConvertDeclaredTypesToJSDoc extends AbstractPostOrderCallback imple
       builder.recordReturnType(typeExpression);
     } else {
       builder.recordType(typeExpression);
+      builder.recordInlineType();
     }
-    builder.recordInlineType();
 
     info = builder.build(n);
     n.setJSDocInfo(info);
+    n.setDeclaredTypeExpression(null); // clear out declared type
   }
 
   private Node convertWithLocation(Node type) {
