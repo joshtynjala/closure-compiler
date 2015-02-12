@@ -538,11 +538,6 @@ class CodeGenerator {
         if (n.isMemberVariableDef()) {
           add(n.getString());
           maybeAddTypeDecl(n);
-          Node initializer = first;
-          if (initializer != null) {
-            cc.addOp("=", true);
-            add(initializer);
-          }
           add(";");
         } else {
           Preconditions.checkState(childCount == 1);
@@ -982,12 +977,9 @@ class CodeGenerator {
           boolean isInClass = n.getParent().getType() == Token.CLASS_MEMBERS;
           Node initializer = first.getNext();
           if (initializer != null) {
-            // Object literal value or member variable initializer.
-            if (isInClass) {
-              cc.addOp("=", true);
-            } else {
-              cc.addOp(":", false);
-            }
+            // Object literal value.
+            Preconditions.checkState(!isInClass, "initializers not supported");
+            cc.addOp(":", false);
             add(initializer);
           } else {
             // Computed properties must either have an initializer or be computed member variable

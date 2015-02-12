@@ -212,20 +212,6 @@ public class TypeSyntaxTest extends TestCase {
         classMembers.getFirstChild());
   }
 
-  public void testMemberVariable_initialiser() throws Exception {
-    Node ast = parse("class Foo {\n  foo = 12;\n}");
-    Node classMembers = ast.getFirstChild().getLastChild();
-    Node definition = Node.newString(Token.MEMBER_VARIABLE_DEF, "foo");
-    definition.addChildrenToBack(Node.newNumber(12));
-    assertTreeEquals("has foo variable", definition, classMembers.getFirstChild());
-  }
-
-  public void testMemberVariable_typeInitialiser() throws Exception {
-    Node ast = parse("class Foo {\n  foo: number = 12;\n}");
-    Node classMembers = ast.getFirstChild().getLastChild();
-    assertDeclaredType("number type", numberType(), classMembers.getFirstChild());
-  }
-
   public void testMemberVariable_generator() throws Exception {
     expectErrors("Parse error. Member variable cannot be prefixed by '*' (generator function)");
     parse("class X { *foo: number; }");
@@ -233,16 +219,6 @@ public class TypeSyntaxTest extends TestCase {
 
   public void testComputedPropertyMemberVariable() throws Exception {
     parse("class Foo {\n  ['foo'];\n}");
-  }
-
-  public void testComputedPropertyMemberVariable_initializer() throws Exception {
-    parse("class Foo {\n  ['foo'] = 12;\n}");
-  }
-
-  public void testComputedPropertyMemberVariable_typeInitializer() throws Exception {
-    Node ast = parse("class Foo {\n  ['foo']: number = 12;\n}");
-    Node classMembers = ast.getFirstChild().getLastChild();
-    assertDeclaredType("number type", numberType(), classMembers.getFirstChild());
   }
 
   public void testMemberVariable_type() {
