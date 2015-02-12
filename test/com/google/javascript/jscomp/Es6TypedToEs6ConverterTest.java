@@ -116,15 +116,9 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
     test(
         Joiner.on('\n').join(
             "(class {",
-            "  constructor() {",
-            "  }",
+            "  x: number;",
             "})"),
-        Joiner.on('\n').join(
-            "(class {",
-            "  static smv = 3;",
-            "  constructor() {",
-            "  }",
-            "})\n"),
+        null,
         Es6TypedToEs6Converter.CANNOT_CONVERT_FIELDS);
     }
 

@@ -57,24 +57,32 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
       return;
     }
     Node classNode = n;
+
+    Node classMembers = classNode.getLastChild();
+    // Find the constructor, see if it has member variables.
+    Node constructor = null;
+    boolean hasMemberVariable = false;
+    for (Node member : classMembers.children()) {
+      if (member.isMemberFunctionDef() && member.getString().equals("constructor")) {
+        constructor = member.getFirstChild();
+      }
+      hasMemberVariable |=
+          member.isMemberVariableDef()
+          || (member.isComputedProp() && member.getBooleanProp(Node.COMPUTED_PROP_VARIABLE));
+    }
+
+    if (!hasMemberVariable) {
+      return;
+    }
+
+    Preconditions.checkNotNull(constructor, "Constructor should be added by Es6ConvertSuper");
+
     ClassDeclarationMetadata metadata = ClassDeclarationMetadata.create(n, parent);
     if (metadata == null) {
       // Cannot handle due to static field initialization.
       compiler.report(JSError.make(n, CANNOT_CONVERT_FIELDS));
       return;
     }
-
-    Node classMembers = classNode.getLastChild();
-
-    // Find the constructor
-    Node constructor = null;
-    for (Node member : classMembers.children()) {
-      if (member.isMemberFunctionDef() && member.getString().equals("constructor")) {
-        constructor = member.getFirstChild();
-      }
-    }
-
-    Preconditions.checkNotNull(constructor, "Constructor should be added by Es6ConvertSuper");
 
     Node classNameAccess = NodeUtil.newQName(compiler, metadata.fullClassName);
     Node memberVarInsertionPoint = null;  // To insert up front initially
