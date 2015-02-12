@@ -1557,9 +1557,6 @@ class IRFactory {
       Node n = newNode(Token.COMPUTED_PROP, transform(tree.property));
       maybeProcessType(n, tree.declaredType);
       n.putBooleanProp(Node.COMPUTED_PROP_VARIABLE, true);
-      if (tree.initializer != null) {
-        n.addChildrenToBack(process(tree.initializer));
-      }
       n.setStaticMember(tree.isStatic);
       return n;
     }
@@ -2036,9 +2033,6 @@ class IRFactory {
     Node processMemberVariable(MemberVariableTree tree) {
       Node member = newStringNode(Token.MEMBER_VARIABLE_DEF, tree.name.value);
       maybeProcessType(member, tree.declaredType);
-      if (tree.initializer != null) {
-        member.addChildrenToFront(process(tree.initializer));
-      }
       member.setStaticMember(tree.isStatic);
       return member;
     }

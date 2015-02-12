@@ -488,18 +488,15 @@ public class Parser {
       if (peek(TokenType.COLON)) {
         declaredType = parseTypeAnnotation();
       }
-      ParseTree initializer = null;
       if (peek(TokenType.EQUAL)) {
-        eat(TokenType.EQUAL);
-        initializer = parseExpression();
+        reportError("Member variable initializers ('=') are not supported");
       }
       eat(TokenType.SEMI_COLON);
       if (nameExpr == null) {
-        return new MemberVariableTree(getTreeLocation(start), name, isStatic, declaredType,
-            initializer);
+        return new MemberVariableTree(getTreeLocation(start), name, isStatic, declaredType);
       } else {
         return new ComputedPropertyMemberVariableTree(getTreeLocation(start), nameExpr, isStatic,
-            declaredType, initializer);
+            declaredType);
       }
     }
   }

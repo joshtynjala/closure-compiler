@@ -27,14 +27,12 @@ public class MemberVariableTree extends ParseTree {
   public final IdentifierToken name;
   public final boolean isStatic;
   @Nullable public final ParseTree declaredType;
-  @Nullable public final ParseTree initializer;
 
   public MemberVariableTree(SourceRange location, IdentifierToken name, boolean isStatic,
-      @Nullable ParseTree declaredType, @Nullable ParseTree initializer) {
+      @Nullable ParseTree declaredType) {
     super(ParseTreeType.MEMBER_VARIABLE, location);
     this.name = name;
     this.isStatic = isStatic;
     this.declaredType = declaredType;
-    this.initializer = initializer;
   }
 }

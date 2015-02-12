@@ -94,19 +94,12 @@ public class Es6TypedToEs6Converter implements NodeTraversal.Callback, HotSwapCo
       compiler.reportCodeChange();
       member.getParent().removeChild(member);
 
-      Node newNode;
       Node qualifiedMemberAccess =
           Es6ToEs3Converter.getQualifiedMemberAccess(compiler, member, classNameAccess,
               IR.thisNode());
-      Node initializer = member.removeFirstChild();
-      if (initializer != null) {
-        newNode = IR.assign(qualifiedMemberAccess, initializer);
-      } else {
-        newNode = qualifiedMemberAccess;
-      }
-      newNode = NodeUtil.newExpr(newNode);
       // Copy type information.
       qualifiedMemberAccess.setJSDocInfo(member.getJSDocInfo());
+      Node newNode = NodeUtil.newExpr(qualifiedMemberAccess);
       newNode.useSourceInfoIfMissingFromForTree(member);
       if (member.isStaticMember()) {
         // Static fields are transpiled on the ctor function.

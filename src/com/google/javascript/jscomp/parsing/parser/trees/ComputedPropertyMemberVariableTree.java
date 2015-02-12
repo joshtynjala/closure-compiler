@@ -26,14 +26,12 @@ public class ComputedPropertyMemberVariableTree extends ParseTree {
   public final ParseTree property;
   public final boolean isStatic;
   @Nullable public final ParseTree declaredType;
-  @Nullable public final ParseTree initializer;
 
   public ComputedPropertyMemberVariableTree(SourceRange location, ParseTree property,
-      boolean isStatic, @Nullable ParseTree declaredType, @Nullable ParseTree initializer) {
+      boolean isStatic, @Nullable ParseTree declaredType) {
     super(ParseTreeType.COMPUTED_PROPERTY_MEMBER_VARIABLE, location);
     this.property = property;
     this.isStatic = isStatic;
     this.declaredType = declaredType;
-    this.initializer = initializer;
   }
 }

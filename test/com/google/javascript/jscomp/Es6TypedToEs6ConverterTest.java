@@ -49,7 +49,6 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
         Joiner.on('\n').join(
             "class C {",
             "  mv: number;",
-            "  mv2: number = 1;",
             "  constructor() {",
             "    this.f = 1;",
             "  }",
@@ -57,8 +56,7 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
         Joiner.on('\n').join(
             "class C {",
             "  constructor() {",
-            "    this.mv;",
-            "    this.mv2 = 1;",
+            "    /** @type {number} */ this.mv;",
             "    this.f = 1;",
             "  }",
             "}"));
@@ -69,13 +67,11 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
         Joiner.on('\n').join(
             "class C {",
             "  mv: number;",
-            "  mv2: number = 1;",
             "}"),
         Joiner.on('\n').join(
             "class C {",
             "  constructor() {",
-            "    this.mv;",
-            "    this.mv2 = 1;",
+            "    /** @type {number} */ this.mv;",
             "  }",
             "}"));
   }
@@ -84,32 +80,14 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
     test(
         Joiner.on('\n').join(
             "class C {",
-            "  static smv = 3;",
-            "  constructor() {",
-            "  }",
+            "  static smv;",
             "}"),
         Joiner.on('\n').join(
             "class C {",
             "  constructor() {",
             "  }",
             "}\n",
-            "C.smv = 3;"));
-  }
-
-  public void testMemberVariable_staticVarAssign() throws Exception {
-    test(
-        Joiner.on('\n').join(
-            "var C = class {",
-            "  static smv = 3;",
-            "  constructor() {",
-            "  }",
-            "}"),
-        Joiner.on('\n').join(
-            "var C = class {",
-            "  constructor() {",
-            "  }",
-            "}\n",
-            "C.smv = 3;"));
+            "C.smv;"));
   }
 
   public void testMemberVariable_staticAnonymous() throws Exception {
@@ -127,7 +105,7 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
         Joiner.on('\n').join(
             "class C {",
             "  ['mv']: number;",
-            "  ['mv' + 2]: number = 1;",
+            "  ['mv' + 2]: number;",
             "  constructor() {",
             "    this.f = 1;",
             "  }",
@@ -135,8 +113,8 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
         Joiner.on('\n').join(
             "class C {",
             "  constructor() {",
-            "    this['mv'];",
-            "    this['mv' + 2] = 1;",
+            "    /** @type {number} */ this['mv'];",
+            "    /** @type {number} */ this['mv' + 2];",
             "    this.f = 1;",
             "  }",
             "}"));
@@ -146,12 +124,12 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
     test(
         Joiner.on('\n').join(
             "class C {",
-            "  static ['smv' + 2]: number = 1;",
+            "  static ['smv' + 2]: number;",
             "}"),
         Joiner.on('\n').join(
             "class C {",
             "  constructor() {}",
             "}",
-            "C['smv' + 2] = 1;"));
+            "/** @type {number} */ C['smv' + 2];"));
   }
 }
