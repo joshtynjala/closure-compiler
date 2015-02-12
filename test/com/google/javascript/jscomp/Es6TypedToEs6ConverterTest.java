@@ -38,6 +38,7 @@ public class Es6TypedToEs6ConverterTest extends CompilerTestCase {
   protected CompilerPass getProcessor(Compiler compiler) {
     PhaseOptimizer optimizer = new PhaseOptimizer(compiler, null, null);
     DefaultPassConfig passConfig = new DefaultPassConfig(getOptions());
+    optimizer.addOneTimePass(passConfig.convertDeclaredTypesToJSDoc);  // make sure types copied
     optimizer.addOneTimePass(passConfig.es6ConvertSuper);  // required for no ctor tests
     optimizer.addOneTimePass(passConfig.convertEs6TypedToEs6);
     return optimizer;
