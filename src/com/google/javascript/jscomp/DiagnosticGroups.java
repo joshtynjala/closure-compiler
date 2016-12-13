@@ -20,6 +20,7 @@ import com.google.common.annotations.GwtIncompatible;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.javascript.jscomp.deps.DepsGenerator;
 import com.google.javascript.jscomp.lint.CheckArrayWithGoogObject;
 import com.google.javascript.jscomp.lint.CheckDuplicateCase;
 import com.google.javascript.jscomp.lint.CheckEmptyStatements;
@@ -127,6 +128,7 @@ public class DiagnosticGroups {
           + "msgDescriptions, "
           + "newCheckTypes, "
           + "nonStandardJsDocs, "
+          + "partialCompile, "
           + "reportUnknownTypes, "
           + "suspiciousCode, "
           + "strictModuleDepCheck, "
@@ -473,6 +475,14 @@ public class DiagnosticGroups {
   public static final DiagnosticGroup MISSING_REQUIRE =
       DiagnosticGroups.registerGroup("missingRequire",
           CheckRequiresForConstructors.MISSING_REQUIRE_WARNING);
+
+  /** A set of diagnostics expected when parsing & type checking partial programs. */
+  public static final DiagnosticGroup PARTIAL_COMPILE = DiagnosticGroups.registerGroup(
+      "partialCompile", REPORT_UNKNOWN_TYPES, UNDEFINED_NAMES, UNDEFINED_VARIABLES, MISSING_PROVIDE,
+      DiagnosticGroup.forType(FunctionTypeBuilder.RESOLVED_TAG_EMPTY),
+      DiagnosticGroup.forType(ProcessClosurePrimitives.MISSING_PROVIDE_ERROR),
+      MISSING_PROPERTIES,
+      DUPLICATE_VARS /* triggered by type defs with missing types */);
 
   public static final DiagnosticGroup STRICT_MISSING_REQUIRE =
       DiagnosticGroups.registerGroup("strictMissingRequire",

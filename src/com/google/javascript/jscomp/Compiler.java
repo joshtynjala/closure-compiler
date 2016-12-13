@@ -51,6 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.FileSystems;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -217,7 +218,7 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
   private DefinitionUseSiteFinder defFinder = null;
 
   // Types that have been forward declared
-  private final Set<String> forwardDeclaredTypes = new HashSet<>();
+  private Set<String> forwardDeclaredTypes = new HashSet<>();
 
   // For use by the new type inference
   private GlobalTypeInfo symbolTable;
@@ -1322,6 +1323,10 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
     if (options.allowUnfulfilledForwardDeclarations()) {
       forwardDeclaredTypes.add(typeName);
     }
+  }
+
+  public void setForwardDeclaredTypes(AbstractSet<String> forwardDeclaredTypes) {
+    this.forwardDeclaredTypes = forwardDeclaredTypes;
   }
 
   @Override
