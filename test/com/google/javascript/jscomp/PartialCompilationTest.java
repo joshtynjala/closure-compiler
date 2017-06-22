@@ -19,8 +19,12 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
+import com.google.javascript.rhino.TypeI;
+import com.google.javascript.rhino.jstype.FunctionType;
 import com.google.javascript.rhino.jstype.JSType;
+import com.google.javascript.rhino.jstype.NoObjectType;
 import com.google.javascript.rhino.jstype.NoType;
 import com.google.javascript.rhino.jstype.ObjectType;
 import java.util.Arrays;
@@ -160,5 +164,23 @@ public class PartialCompilationTest extends TestCase {
         "function missingInside() {",
         "  useMissing(new some.thing.Missing());",
         "}");
+  }
+
+  public void testUnresolvedMethodParam() throws Exception {
+    assertPartialCompilationSucceeds(
+        "goog.provide('forward.A');",
+        "/** @constructor */",
+        "forward.A = function() {};",
+        "/** @param {!forward.D} a */",
+        "forward.A.prototype.fn;");
+    TypedVar x = compiler.getTopScope().getSlot("forward.A");
+    assertThat(x.getType().isFunctionType()).isTrue();
+    FunctionType classType = (FunctionType) x.getType();
+    FunctionType fn = (FunctionType) classType.getPrototype().getPropertyType("fn");
+    Iterable<TypeI> params = fn.getParameterTypes();
+    assertThat(params).hasSize(1);
+    JSType param = (JSType) Iterables.getOnlyElement(params);
+    assertThat(param.isNoResolvedType()).isTrue();
+    assertThat(((NoObjectType) param).getReferenceName()).isEqualTo("forward.D");
   }
 }
